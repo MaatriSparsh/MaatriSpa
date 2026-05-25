@@ -1,0 +1,6 @@
+{
+  "name": "MaatriSparsh",
+  "description": "Nurturing postpartum mother care and holistic newborn wellness services. Bridging traditional warm wisdom, lactation counseling, infant massage, and empathetic recovery booking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

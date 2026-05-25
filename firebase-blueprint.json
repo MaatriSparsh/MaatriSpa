@@ -1,0 +1,241 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Personal profile record for registered postnatal mothers.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase user identifier."
+        },
+        "email": {
+          "type": "string",
+          "description": "Contact email address of the mother."
+        },
+        "motherName": {
+          "type": "string",
+          "description": "Full legal name of the mother."
+        },
+        "phone": {
+          "type": "string",
+          "description": "Mobile contact number for session coordination."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Registration audit timestamp."
+        }
+      },
+      "required": ["uid", "email", "motherName", "phone", "createdAt"]
+    },
+    "Booking": {
+      "title": "Holistic Booking",
+      "description": "Postnatal and newborn wellness session reservation with INR details and GST.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique booking reference ID starting with msb-."
+        },
+        "bookingId": {
+          "type": "string",
+          "description": "Exhaustive duplicative key matching ID."
+        },
+        "customerName": {
+          "type": "string",
+          "description": "Mother name mapped directly."
+        },
+        "email": {
+          "type": "string",
+          "description": "Notification email address."
+        },
+        "phone": {
+          "type": "string",
+          "description": "Direct communication telephone coordinate."
+        },
+        "bookingDate": {
+          "type": "string",
+          "description": "Date of appointment in YYYY-MM-DD standard format."
+        },
+        "bookingTime": {
+          "type": "string",
+          "description": "Assigned session hours."
+        },
+        "serviceName": {
+          "type": "string",
+          "description": "Name of postnatal service."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional notes or clinical birth detail remarks."
+        },
+        "paymentStatus": {
+          "type": "string",
+          "enum": ["Pending", "Paid", "Refunded"]
+        },
+        "bookingStatus": {
+          "type": "string",
+          "enum": ["Pending", "Confirmed", "Cancelled", "Completed"]
+        },
+        "originalPrice": {
+          "type": "number",
+          "description": "Full pricing rate prior to coupon offsets in INR."
+        },
+        "priceInr": {
+          "type": "number",
+          "description": "Price index in INR."
+        },
+        "gstInr": {
+          "type": "number",
+          "description": "18% Indian GST component cost."
+        },
+        "finalPriceInr": {
+          "type": "number",
+          "description": "Gross cost paid including taxes in INR."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "bookingId",
+        "customerName",
+        "email",
+        "phone",
+        "bookingDate",
+        "bookingTime",
+        "serviceName",
+        "paymentStatus",
+        "bookingStatus",
+        "originalPrice",
+        "priceInr",
+        "gstInr",
+        "finalPriceInr",
+        "createdAt"
+      ]
+    },
+    "Service": {
+      "title": "Premium Service Care Packages",
+      "description": "Postpartum care packages and educational programs stored with Indian pricing structures.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Treatment ID key."
+        },
+        "name": {
+          "type": "string",
+          "description": "Service Title in English."
+        },
+        "nameHindi": {
+          "type": "string",
+          "description": "Service Title in Hindi."
+        },
+        "priceInr": {
+          "type": "number",
+          "description": "Full consultation pricing rate in INR."
+        },
+        "discountedPrice": {
+          "type": "number",
+          "description": "Discounted rate in INR."
+        },
+        "category": {
+          "type": "string"
+        },
+        "duration": {
+          "type": "number"
+        },
+        "activeStatus": {
+          "type": "boolean"
+        }
+      },
+      "required": ["id", "name", "priceInr", "category", "duration", "activeStatus"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "Postpartum care feedback and postnatal experience reviews with option for secure media.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "reviewId": {
+          "type": "string"
+        },
+        "userId": {
+          "type": "string"
+        },
+        "userName": {
+          "type": "string"
+        },
+        "userEmail": {
+          "type": "string"
+        },
+        "rating": {
+          "type": "number"
+        },
+        "comment": {
+          "type": "string"
+        },
+        "serviceName": {
+          "type": "string"
+        },
+        "childName": {
+          "type": "string"
+        },
+        "mediaUrl": {
+          "type": "string"
+        },
+        "mediaType": {
+          "type": "string",
+          "enum": ["image", "video", "none"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Pending", "Approved", "Rejected"]
+        },
+        "isFeatured": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "reviewId", "userId", "userName", "rating", "comment", "status", "isFeatured", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "A collection containing user profiles for registered mothers."
+    },
+    "bookings/{bookingId}": {
+      "schema": "Booking",
+      "description": "A collection mapping scheduled appointments, secured by the booking owner."
+    },
+    "services/{serviceId}": {
+      "schema": "Service",
+      "description": "Dynamic care package directory with INR parameters and active statuses."
+    },
+    "coupons/{couponCode}": {
+      "schema": "Coupon",
+      "description": "Promotional discounts catalog that customers check during checkout."
+    },
+    "activityLogs/{logId}": {
+      "schema": "ActivityLog",
+      "description": "Audit records tracing administrator changes real-time."
+    },
+    "priceHistory/{logId}": {
+      "schema": "PriceHistoryLog",
+      "description": "Log cataloging service pricing changes made by administrators."
+    },
+    "reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "Customer reviews and testimonials with star ratings, optional media, and approval flows."
+    }
+  }
+}
