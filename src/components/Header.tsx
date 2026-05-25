@@ -17,40 +17,172 @@ interface HeaderProps {
 // Beautiful customized vector logo representing the gold letter "M" forming a heart
 // containing a mother-infant silhouette and a gold health plus, on a soft pink circle back
 export function ElegantLogo() {
+  const ringVariants = {
+    hidden: { pathLength: 0, opacity: 0 },
+    visible: { 
+      pathLength: 1, 
+      opacity: 1,
+      transition: { duration: 1.5, ease: 'easeInOut' }
+    }
+  };
+
+  const leafVariants = {
+    hidden: { pathLength: 0, opacity: 0 },
+    visible: { 
+      pathLength: 1, 
+      opacity: 1, 
+      transition: { duration: 1.4, ease: 'easeOut', delay: 0.4 }
+    }
+  };
+
+  const dotVariants = {
+    hidden: { scale: 0, opacity: 0 },
+    visible: (i: number) => ({
+      scale: 1,
+      opacity: 1,
+      transition: { 
+        type: 'spring', 
+        stiffness: 120, 
+        damping: 8, 
+        delay: 1.0 + i * 0.15 
+      }
+    })
+  };
+
+  const containerVariants = {
+    animate: {
+      y: [0, -1.5, 0],
+      transition: {
+        duration: 5,
+        ease: 'easeInOut',
+        repeat: Infinity,
+        repeatType: 'reverse' as const
+      }
+    },
+    hover: {
+      scale: 1.06,
+      filter: 'drop-shadow(0 0 8px rgba(212, 163, 89, 0.6))',
+      transition: { duration: 0.3, ease: 'easeOut' }
+    }
+  };
+
   return (
-    <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FFF1F2] border border-rose-100 shadow-xs shrink-0" id="brand-emblem-badge">
-      <svg viewBox="0 0 100 100" className="h-10 w-10 overflow-visible shrink-0" id="logo-emblem-svg">
-        {/* Soft pink heart background fill inside the logo */}
-        <path 
-          d="M50 82C50 82 18 55 18 35C18 21 27 12 39 12C46 12 48 17 50 22C52 17 54 12 61 12C73 12 82 21 82 35C82 55 50 82 50 82Z" 
-          fill="#FFE4E6" 
-          opacity="0.9" 
-        />
-        {/* Golden outer letter "M" whose center dipping curve forms the inner heart boundary */}
-        <path 
-          d="M22 75 L22 25 C22 17 29 13 35 18 C41 24 45 32 50 38 C55 32 59 24 65 18 C71 13 78 17 78 25 L78 75" 
-          stroke="#ca8a04" 
-          strokeWidth="4" 
+    <motion.div 
+      className="relative flex h-14 w-14 md:h-16 md:w-16 items-center justify-center rounded-full bg-stone-100/40 border border-stone-200/50 shadow-xs shrink-0 overflow-visible" 
+      id="brand-emblem-badge"
+      variants={containerVariants}
+      animate="animate"
+      whileHover="hover"
+    >
+      <svg viewBox="0 0 100 100" className="h-11 w-11 md:h-13 md:w-13 overflow-visible shrink-0" id="logo-emblem-svg">
+        <defs>
+          <linearGradient id="maatriGoldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#FFE082" /> {/* Light radiant cream gold */}
+            <stop offset="40%" stopColor="#DFB15B" /> {/* Classic soft glowing gold */}
+            <stop offset="70%" stopColor="#C59B27" /> {/* Ayurvedic deep mustard gold */}
+            <stop offset="100%" stopColor="#8A6D1C" /> {/* Rich antique bronze */}
+          </linearGradient>
+        </defs>
+
+        {/* 1. Circular Outer Ring with Gap at the top */}
+        <motion.path 
+          d="M 32 18 A 38 38 0 1 0 68 18" 
+          stroke="url(#maatriGoldGradient)" 
+          strokeWidth="3.2" 
           strokeLinecap="round" 
-          strokeLinejoin="round" 
-          fill="none" 
+          fill="none"
+          variants={ringVariants}
+          initial="hidden"
+          animate="visible"
         />
-        {/* Mother silhouette kissing child in gold */}
-        <path 
-          d="M44 46C41 41 46 33 50 33C54 33 56 37 54 42C52 47 45 49 44 46Z" 
-          fill="#a16207" 
+
+        {/* 2. Three Crown Leaves in the Top Gap */}
+        {/* Middle Leaf (Upright) */}
+        <motion.path 
+          d="M 50 14 C 47.5 11, 47.5 7, 50 3 C 52.5 7, 52.5 11, 50 14 Z" 
+          stroke="url(#maatriGoldGradient)"
+          strokeWidth="2.2"
+          fill="none"
+          variants={leafVariants}
+          initial="hidden"
+          animate="visible"
         />
-        <path 
-          d="M40 52C37 57 32 63 35 73C38 78 48 83 55 77C57 73 54 66 50 64C46 62 43 56 40 52Z" 
-          fill="#a16207" 
+        {/* Left Leaf (Tilted Left) */}
+        <motion.path 
+          d="M 45.5 16.5 C 41.5 15, 39 11, 40.5 7 C 44 8, 46 12.5, 45.5 16.5 Z" 
+          stroke="url(#maatriGoldGradient)"
+          strokeWidth="2.2"
+          fill="none"
+          variants={leafVariants}
+          initial="hidden"
+          animate="visible"
         />
-        {/* Child silhouette and plus symbol */}
-        <circle cx="58" cy="58" r="4.5" fill="#ca8a04" />
-        <path d="M54 64C56 68 62 72 65 67" stroke="#ca8a04" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-        {/* Health Plus Symbol */}
-        <path d="M72 26 H82 M77 21 V31" stroke="#ca8a04" strokeWidth="3.5" strokeLinecap="round" />
+        {/* Right Leaf (Tilted Right) */}
+        <motion.path 
+          d="M 54.5 16.5 C 58.5 15, 61 11, 59.5 7 C 56 8, 54 12.5, 54.5 16.5 Z" 
+          stroke="url(#maatriGoldGradient)"
+          strokeWidth="2.2"
+          fill="none"
+          variants={leafVariants}
+          initial="hidden"
+          animate="visible"
+        />
+
+        {/* 3. Three Triadic Pearls/Seed Dots Inside */}
+        <motion.circle 
+          cx="46.5" 
+          cy="27" 
+          r="2.5" 
+          fill="url(#maatriGoldGradient)"
+          variants={dotVariants}
+          custom={0}
+          initial="hidden"
+          animate="visible"
+        />
+        <motion.circle 
+          cx="53.5" 
+          cy="27" 
+          r="2.5" 
+          fill="url(#maatriGoldGradient)"
+          variants={dotVariants}
+          custom={1}
+          initial="hidden"
+          animate="visible"
+        />
+        <motion.circle 
+          cx="50" 
+          cy="32.5" 
+          r="2.5" 
+          fill="url(#maatriGoldGradient)"
+          variants={dotVariants}
+          custom={2}
+          initial="hidden"
+          animate="visible"
+        />
+
+        {/* 4. Two Sweeping Inner Cradle/Lotus Leaves */}
+        {/* Left Inner Leaf */}
+        <motion.path 
+          d="M 48.5 79 C 39 75, 35 55, 36.5 32 C 37 31, 38 31, 38.5 32 C 44.5 48, 48 65, 48.5 79 Z" 
+          stroke="url(#maatriGoldGradient)"
+          strokeWidth="2.6"
+          fill="none"
+          variants={leafVariants}
+          initial="hidden"
+          animate="visible"
+        />
+        {/* Right Inner Leaf */}
+        <motion.path 
+          d="M 51.5 79 C 61 75, 65 55, 63.5 32 C 63 31, 62 31, 61.5 32 C 55.5 48, 52 65, 51.5 79 Z" 
+          stroke="url(#maatriGoldGradient)"
+          strokeWidth="2.6"
+          fill="none"
+          variants={leafVariants}
+          initial="hidden"
+          animate="visible"
+        />
       </svg>
-    </div>
+    </motion.div>
   );
 }
 
@@ -80,21 +212,21 @@ export default function Header({ activeTab, setActiveTab, onOpenBooking, onOpenA
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-stone-200/80 bg-stone-50/90 backdrop-blur-md">
-      <div className="mx-auto flex max-w-7xl h-20 items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex max-w-7xl h-22 items-center justify-between px-4 sm:px-6 lg:px-8">
         
         {/* Logo and Brand Title representing postpartum and newborn protection */}
         <div 
-          className="flex cursor-pointer items-center space-x-3" 
+          className="flex cursor-pointer items-center space-x-3 sm:space-x-4" 
           onClick={() => setActiveTab('home')}
           id="brand-logo"
         >
           <ElegantLogo />
           <div>
-            <span className="font-serif text-xl sm:text-2xl font-bold tracking-tight text-stone-900 leading-none block">
-              Maatri<span className="text-emerald-800 font-serif">Sparsh</span>
+            <span className="font-serif text-2xl sm:text-3xl font-bold tracking-tight bg-gradient-to-r from-[#DFB15B] via-[#C59B27] to-[#8A6D1C] bg-clip-text text-transparent leading-none block select-none">
+              MaatriSparsh
             </span>
-            <span className="block text-[8px] sm:text-[9px] font-mono uppercase tracking-widest text-[#a16207] -mt-0.5 font-bold">
-              {language === 'en' ? 'Postnatal & Newborn Sanctum' : 'प्रसवोत्तर और नवजात शिशु कल्याण केंद्र'}
+            <span className="block text-[9px] sm:text-[10px] font-serif text-[#C59B27]/95 mt-1 font-medium tracking-wide select-none">
+              {language === 'en' ? 'The Healing Touch for a Mother' : 'प्रसवोत्तर और नवजात शिशु कल्याण केंद्र'}
             </span>
           </div>
         </div>

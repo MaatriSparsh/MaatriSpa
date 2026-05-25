@@ -114,6 +114,7 @@ export interface Review {
   userEmail: string;
   rating: number; // 1-5
   comment: string;
+  commentHindi?: string; // optional localized comment
   serviceName?: string; // optional postnatal service details
   childName?: string; // optional details (e.g. child name, age, etc.)
   mediaUrl?: string; // secure media download URL

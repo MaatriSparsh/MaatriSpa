@@ -456,7 +456,7 @@ export default function TestimonialsView() {
 
                   {/* Comment */}
                   <p className="text-stone-750 text-xs sm:text-sm leading-relaxed font-serif italic text-justify">
-                    "{rev.comment}"
+                    "{language === 'en' ? rev.comment : (rev.commentHindi || rev.comment)}"
                   </p>
 
                   {/* Render optional media attachments (securely uploaded or base64) */}

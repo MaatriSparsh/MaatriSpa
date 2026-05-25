@@ -125,11 +125,11 @@ export default function AuthModal({ onClose, onSuccess, initialMode = 'signin' }
           }
           
           await signUpWithEmail(email, password, motherName, phone);
-          setLocalSuccess('Profile created successfully! Synchronizing your maternal workspace...');
+          setLocalSuccess('Maternal account registered! Check your inbox for a secure verification link before entering the sanctuary.');
           setTimeout(() => {
             if (onSuccess) onSuccess();
             onClose();
-          }, 1500);
+          }, 3000);
         } else if (mode === 'signin') {
           if (!email || !password) {
             throw new Error('Please enter both your registered email and secure password.');

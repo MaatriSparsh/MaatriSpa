@@ -11,6 +11,7 @@ import BookingWizard from './components/BookingWizard';
 import AuthModal from './components/AuthModal';
 import MyBookingsModal from './components/MyBookingsModal';
 import AdminPortalModal from './components/AdminPortalModal';
+import EmailVerificationPending from './components/EmailVerificationPending';
 import { Booking } from './types';
 import { motion, AnimatePresence } from 'motion/react';
 import { TicketCheck, Flower2 } from 'lucide-react';
@@ -32,6 +33,9 @@ export default function App() {
 
   const { user, bookings } = useFirebase();
   const { t, language } = useLanguage();
+
+  const isEmailUser = user?.providerData.some((p) => p.providerId === 'password');
+  const isPendingVerification = !!(user && isEmailUser && !user.emailVerified);
 
   // Keep static and dynamic sync of booking count
   useEffect(() => {
@@ -70,6 +74,15 @@ export default function App() {
   };
 
   const handleOpenBookingWithService = (serviceId: string) => {
+    if (isPendingVerification) {
+      setToastMessage(
+        language === 'en'
+          ? 'Kindly verify your email before scheduling services.'
+          : 'कृपया सेवाएं बुक करने से पहले अपना ईमेल सत्यापित करें।'
+      );
+      setTimeout(() => setToastMessage(null), 5000);
+      return;
+    }
     if (!user) {
       setToastMessage(
         language === 'en'
@@ -87,6 +100,15 @@ export default function App() {
   };
 
   const handleOpenGeneralBooking = () => {
+    if (isPendingVerification) {
+      setToastMessage(
+        language === 'en'
+          ? 'Kindly verify your email before scheduling.'
+          : 'कृपया सत्र बुक करने से पहले अपना ईमेल सत्यापित करें।'
+      );
+      setTimeout(() => setToastMessage(null), 5000);
+      return;
+    }
     if (!user) {
       setToastMessage(
         language === 'en'
@@ -130,6 +152,46 @@ export default function App() {
         bookingCount={bookingCount}
       />
 
+      {/* Elegant Infinite Running Alert Banner below Header */}
+      <div className="relative w-full bg-amber-50/90 border-b border-amber-100/80 py-2 sm:py-2.5 overflow-hidden select-none" id="geofence-alert-banner">
+        <div className="mx-auto flex max-w-7xl items-center px-4 sm:px-6 lg:px-8">
+          
+          {/* Static Area Badge */}
+          <div className="flex items-center space-x-1.5 shrink-0 bg-amber-100 hover:bg-amber-200/85 text-amber-900 border border-amber-200/82 rounded-full px-2.5 py-1 text-[10px] sm:text-xs font-serif font-bold transition-all mr-4 z-10 shadow-xs">
+            <span className="relative flex h-1.5 w-1.5 sm:h-2 sm:w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 sm:h-2 sm:w-2 bg-rose-600"></span>
+            </span>
+            <span className="tracking-wide">{language === 'en' ? 'Active Territory Only' : 'सक्रिय सेवा क्षेत्र'}</span>
+          </div>
+
+          {/* Marquee Track Container */}
+          <div className="relative flex-1 overflow-hidden" id="marquee-scrolling-container">
+            <motion.div
+              className="flex whitespace-nowrap space-x-12 sm:space-x-16"
+              animate={{ x: ["0%", "-50%"] }}
+              transition={{
+                ease: "linear",
+                duration: 25,
+                repeat: Infinity,
+              }}
+            >
+              {/* Duplicate contents to make seamless infinite rotation */}
+              {[1, 2, 3, 4].map((index) => (
+                <div key={index} className="flex items-center space-x-12 sm:space-x-16 shrink-0">
+                  <span className="text-xs sm:text-sm font-serif font-extrabold tracking-wide text-amber-950 flex items-center space-x-2">
+                    <span>📍 {language === 'en' ? 'Only Available in Raipur-Bhilai-Durg' : 'केवल रायपुर - भिलाई - दुर्ग में सेवा उपलब्ध'}</span>
+                  </span>
+                  <span className="text-[10px] sm:text-[11px] font-mono text-stone-400 select-none font-medium uppercase tracking-widest block py-0.5 px-2 bg-stone-100 rounded-md">
+                    {language === 'en' ? 'Exclusive Postnatal Sanctum' : 'पारंपरिक प्रसवोत्तर केंद्र'}
+                  </span>
+                </div>
+              ))}
+            </motion.div>
+          </div>
+        </div>
+      </div>
+
       {/* Floating Success Toast Alert Panel */}
       <AnimatePresence>
         {toastMessage && (
@@ -169,29 +231,33 @@ export default function App() {
       </AnimatePresence>
 
       {/* Active Tabs Renderer with smooth layout fade-ins */}
-      <main className="flex-1">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2 }}
-          >
-            {activeTab === 'home' && (
-              <HomeView
-                onNavigateToTab={setActiveTab}
-                onOpenBookingWithService={handleOpenBookingWithService}
-              />
-            )}
-            {activeTab === 'about' && <AboutView />}
-            {activeTab === 'services' && (
-              <ServicesView onOpenBookingWithService={handleOpenBookingWithService} />
-            )}
-            {activeTab === 'testimonials' && <TestimonialsView />}
-            {activeTab === 'contact' && <ContactView />}
-          </motion.div>
-        </AnimatePresence>
+      <main className="flex-1" id="main-content-flow">
+        {isPendingVerification ? (
+          <EmailVerificationPending />
+        ) : (
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+            >
+              {activeTab === 'home' && (
+                <HomeView
+                  onNavigateToTab={setActiveTab}
+                  onOpenBookingWithService={handleOpenBookingWithService}
+                />
+              )}
+              {activeTab === 'about' && <AboutView />}
+              {activeTab === 'services' && (
+                <ServicesView onOpenBookingWithService={handleOpenBookingWithService} />
+              )}
+              {activeTab === 'testimonials' && <TestimonialsView />}
+              {activeTab === 'contact' && <ContactView />}
+            </motion.div>
+          </AnimatePresence>
+        )}
       </main>
 
       <Footer

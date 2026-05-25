@@ -2,6 +2,149 @@ import { Service, Practitioner, Feedback, Coupon } from './types';
 
 export const SERVICES: Service[] = [
   {
+    id: 'normal-sukoon-7',
+    name: 'Sukoon Saptah (7 Days) - Normal Delivery Care',
+    nameHindi: 'सुकून सप्ताह (7 दिन) - नॉर्मल डिलीवरी केयर',
+    category: 'postpartum_mother',
+    description: 'A premium 7-day postnatal recovery programme tailored for comfortable recovery after normal delivery. Focuses on gentle mother care, traditional body massage, lactation training, and basic newborn safety.',
+    descriptionHindi: 'नॉर्मल डिलीवरी के बाद नई माताओं के त्वरित स्वास्थ्य लाभ के लिए 7 दिनों का विशेष केयर पैकेज। इसमें सूतिका मालिश, स्तनपान गाइडेंस और शिशु की उचित देखभाल शामिल है।',
+    priceInr: 1499,
+    discountedPrice: 1499,
+    duration: 300,
+    image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=600&q=80',
+    benefits: [
+      'Mother Care & Lactation Training',
+      'Baby Care',
+      'Pain Management',
+      'Vital Monitoring',
+      'Nutritional Support'
+    ],
+    benefitsHindi: [
+      'माता की उचित देखभाल और स्तनपान प्रशिक्षण',
+      'नवजात शिशु की कोमल देखभाल',
+      'दर्द और थकान प्रबंधन',
+      'वाइटल्स / महत्वपूर्ण स्वास्थ्य निगरानी',
+      'पारंपरिक पौष्टिक आहार मार्गदर्शन'
+    ],
+    activeStatus: true
+  },
+  {
+    id: 'normal-puran-14',
+    name: 'Puran Aarohan (14 Days) - Normal Delivery Care',
+    nameHindi: 'पूर्ण आरोहण (14 दिन) - नॉर्मल डिलीवरी केयर',
+    category: 'postpartum_mother',
+    description: 'A deep, therapeutic 14-day holistic postnatal alignment. Promotes cellular core recovery, postpartum pelvic compression, infant digestion schedules, and nurturing postnatal spa therapy.',
+    descriptionHindi: '14 दिनों की सघन सूतिका मालिश और बेली बाइंडिंग चिकित्सा पद्धति। यह गर्भाशय और रीढ़ के संरेखण, शिशु पाचन और शानदार स्पा स्तर की शांति सुनिश्चित करता है।',
+    priceInr: 1499,
+    discountedPrice: 1499,
+    duration: 600,
+    image: 'https://images.unsplash.com/photo-1519689680058-324335c77eba?auto=format&fit=crop&w=600&q=80',
+    benefits: [
+      'Mother Care & Lactation Training',
+      'Baby Care',
+      'Pain Management',
+      'Vital Monitoring',
+      'Nutritional Support',
+      'Nurse Visit',
+      'Holistic Spa'
+    ],
+    benefitsHindi: [
+      'माता की उचित देखभाल और स्तनपान प्रशिक्षण',
+      'नवजात शिशु की कोमल देखभाल',
+      'दर्द और थकान प्रबंधन',
+      'वाइटल्स / महत्वपूर्ण स्वास्थ्य निगरानी',
+      'पारंपरिक पौष्टिक आहार मार्गदर्शन',
+      'विशेष नर्स विजिट और स्वास्थ्य परामर्श',
+      'होलिस्टिक प्रसवोत्तर स्पा'
+    ],
+    activeStatus: true
+  },
+  {
+    id: 'lscs-navya-4',
+    name: 'Navya Recovery (4 Days) - LSCS Care',
+    nameHindi: 'नव्या रिकवरी (4 दिन) - सिजेरियन केयर',
+    category: 'postpartum_mother',
+    description: 'A delicate 4-day intensive C-section rehabilitation sequence centered on surgical incision safety, comfortable movement, baby holding ergonomics, and calming therapeutic body treatments.',
+    descriptionHindi: 'सी-सेक्शन प्रसव के बाद टांकों की सुरक्षा के लिए 4 दिनों का विशेष सघन रिकवरी पैकेज। इसमें हल्के रीढ़ एर्गोनॉमिक्स, सुरक्षित संचलन, दर्द प्रबंधन और कोमल स्पा उपचार शामिल हैं।',
+    priceInr: 1499,
+    discountedPrice: 1499,
+    duration: 180,
+    image: 'https://images.unsplash.com/photo-1516627145497-ae6968895b74?auto=format&fit=crop&w=600&q=80',
+    benefits: [
+      'Mother Care',
+      'Baby Care',
+      'Pain Management',
+      'Holistic Spa'
+    ],
+    benefitsHindi: [
+      'सिजेरियन के बाद माता की कोमल देखभाल',
+      'नवजात शिशु की सुरक्षित देखभाल',
+      'कोमल दर्द प्रबंधन और टांकों की रक्षा',
+      'सुरक्षित होलिस्टिक स्पा उपचार'
+    ],
+    activeStatus: true
+  },
+  {
+    id: 'lscs-sukoon-7',
+    name: 'Sukoon Saptah (7 Days) - LSCS Care',
+    nameHindi: 'सुकून सप्ताह (7 दिन) - सिजेरियन केयर',
+    category: 'postpartum_mother',
+    description: 'A supportive 7-day program to help C-section mothers regain structural mobility. Includes expert wound compliance training, pelvic posture balance, lactation hold support, and warm infant sponge baths.',
+    descriptionHindi: '7 दिनों का सूतिका कल्याण कार्यक्रम जो सी-सेक्शन माताओं के शरीर को शक्ति और गतिशीलता प्रदान करता है। दर्द कम करना, स्तनपान पकड़ सुधारना और कोमल स्पा सेवा इसमें शामिल हैं।',
+    priceInr: 1499,
+    discountedPrice: 1499,
+    duration: 350,
+    image: 'https://images.unsplash.com/photo-1581579438747-1dc8d1e0ca96?auto=format&fit=crop&w=600&q=80',
+    benefits: [
+      'Mother Care & Lactation Training',
+      'Baby Care',
+      'Pain Management',
+      'Vital Monitoring',
+      'Nutritional Support',
+      'Holistic Spa'
+    ],
+    benefitsHindi: [
+      'माता की उचित देखभाल और स्तनपान प्रशिक्षण',
+      'नवजात शिशु की कोमल देखभाल',
+      'दर्द और थकान प्रबंधन',
+      'वाइटल्स / महत्वपूर्ण स्वास्थ्य निगरानी',
+      'पारंपरिक पौष्टिक आहार मार्गदर्शन',
+      'होलिस्टिक प्रसवोत्तर स्पा'
+    ],
+    activeStatus: true
+  },
+  {
+    id: 'lscs-puran-14',
+    name: 'Puran Aarohan (14 Days) - LSCS Care',
+    nameHindi: 'पूर्ण आरोहण (14 दिन) - सिजेरियन केयर',
+    category: 'postpartum_mother',
+    description: 'The ultimate 14-day comprehensive LSCS healing cycle. Includes lymphatic fluid drainage to clear surgical inflammation, pelvic alignment correction, nurse checkups, and luxurious prenatal spa therapies.',
+    descriptionHindi: 'सी-सेक्शन विशिष्ट 14 दिनों की पूर्ण शारीरिक कल्याण प्रणाली। इसमें सूजन निवारक लिम्फैटिक ड्रेनेज, मां की हड्डियों व रीढ़ संरेखण, नर्स विजिट और संपूर्ण स्पा लाभ शामिल हैं।',
+    priceInr: 1499,
+    discountedPrice: 1499,
+    duration: 700,
+    image: 'https://images.unsplash.com/photo-1505252585461-04db1eb84625?auto=format&fit=crop&w=600&q=80',
+    benefits: [
+      'Mother Care & Lactation Training',
+      'Baby Care',
+      'Pain Management',
+      'Vital Monitoring',
+      'Nutritional Support',
+      'Nurse Visit',
+      'Holistic Spa'
+    ],
+    benefitsHindi: [
+      'माता की उचित देखभाल और स्तनपान प्रशिक्षण',
+      'नवजात शिशु की कोमल देखभाल',
+      'दर्द और थकान प्रबंधन',
+      'वाइटल्स / महत्वपूर्ण स्वास्थ्य निगरानी',
+      'पारंपरिक पौष्टिक आहार मार्गदर्शन',
+      'विशेष नर्स विजिट और स्वास्थ्य परामर्श',
+      'होलिस्टिक प्रसवोत्तर स्पा'
+    ],
+    activeStatus: true
+  },
+  {
     id: 'lactation-consult',
     name: 'Latching & Lactation Consultation',
     nameHindi: 'स्तनपान और लैक्टेशन मार्गदर्शन',

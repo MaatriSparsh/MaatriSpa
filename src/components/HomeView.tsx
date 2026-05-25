@@ -487,7 +487,7 @@ export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: 
                       ))}
                     </div>
                     <p className="text-stone-650 text-xs sm:text-sm leading-relaxed italic">
-                      "{rev.comment}"
+                      "{language === 'en' ? rev.comment : (rev.commentHindi || rev.comment)}"
                     </p>
                     {rev.mediaUrl && (
                       <div className="rounded-2xl overflow-hidden bg-stone-50 border border-stone-100 aspect-video max-h-36 relative flex items-center justify-center">

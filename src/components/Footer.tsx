@@ -20,8 +20,8 @@ export default function Footer({ setActiveTab, onOpenBooking }: FooterProps) {
           <div className="md:col-span-1 space-y-4">
             <div className="flex items-center space-x-2.5">
               <ElegantLogo />
-              <span className="font-serif text-xl font-bold tracking-tight text-white">
-                Maatri<span className="text-emerald-500 font-medium">Sparsh</span>
+              <span className="font-serif text-xl sm:text-2xl font-bold tracking-tight bg-gradient-to-r from-[#DFB15B] via-[#C59B27] to-[#8A6D1C] bg-clip-text text-transparent">
+                MaatriSparsh
               </span>
             </div>
             <p className="text-xs sm:text-sm leading-relaxed text-stone-400">

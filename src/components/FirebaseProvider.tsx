@@ -11,7 +11,9 @@ import {
   RecaptchaVerifier,
   signInWithPhoneNumber,
   ConfirmationResult,
-  User as FirebaseUser 
+  User as FirebaseUser,
+  sendEmailVerification,
+  reload
 } from 'firebase/auth';
 import { 
   doc, 
@@ -58,6 +60,8 @@ interface FirebaseContextType {
   setupRecaptcha: (containerId: string) => void;
   signInWithPhone: (phoneNumber: string, isRegistering?: boolean, pendingData?: { fullName: string; email: string }) => Promise<void>;
   verifyPhoneCode: (code: string) => Promise<void>;
+  checkEmailVerificationStatus: () => Promise<boolean>;
+  resendSecondaryVerification: () => Promise<void>;
   
   // Service Pricing and Coupon Management:
   addOrUpdateService: (service: Service) => Promise<void>;
@@ -109,6 +113,54 @@ function cleanUndefined(obj: any): any {
   return result;
 }
 
+const DEFAULT_REVIEWS: Review[] = [
+  {
+    id: "def-1",
+    reviewId: "def-1",
+    userId: "default-user-1",
+    userName: "Karishma Sharma",
+    userEmail: "karishma@maatrisparsh.com",
+    rating: 5,
+    comment: "Postpartum lower back stiffness had me in severe fatigue during the early weeks. Implementing their physical posture correction layouts and comfortable abdominal wraps in my home felt like an absolute relief. It stabilized my core.",
+    commentHindi: "प्रसवोत्तर पीठ दर्द और थकावट ने मुझे शुरुआती हफ्तों में चलने में भी असमर्थ कर दिया था। घर पर विशेषज्ञ द्वारा निर्देशित शारीरिक मुद्रा सुधार व सुरक्षित सूती पेट की बेली रैपिंग ने मुझे अद्भुत स्थिरता व आराम प्रदान किया।",
+    serviceName: "Sukoon Saptah",
+    childName: "4 Weeks Old",
+    status: "Approved",
+    isFeatured: true,
+    createdAt: "2026-05-20T08:00:00.000Z"
+  },
+  {
+    id: "def-2",
+    reviewId: "def-2",
+    userId: "default-user-2",
+    userName: "Ananya Deshmukh",
+    userEmail: "ananya@maatrisparsh.com",
+    rating: 5,
+    comment: "My newborn was crying continuously from wind gas. The lactation coordinator taught us correct swaddling wraps and supportive digestive schedule. Dev sleeps beautifully now!",
+    commentHindi: "हमारा नवजात शिशु पेट में मरोड़ और अनिंद्रा के दर्द से परेशान रहता था। समन्वयक टीम ने हमें आरामदायक स्वैडलिंग (लपेटना) और पौष्टिक प्रसवोत्तर भोजन योजना सिखाई। देव अब बहुत आराम से सोता है।",
+    serviceName: "Ayurvedic Abhyanga",
+    childName: "Baby Dev (6 Weeks)",
+    status: "Approved",
+    isFeatured: true,
+    createdAt: "2026-05-21T08:00:00.000Z"
+  },
+  {
+    id: "def-3",
+    reviewId: "def-3",
+    userId: "default-user-3",
+    userName: "Priyanka Iyer",
+    userEmail: "priyanka@maatrisparsh.com",
+    rating: 5,
+    comment: "Breastfeeding latching pains made me dread nursing. The lactation coordinator was remarkably patient, correcting my holding posture. My nursing journey is now fully comfortable!",
+    commentHindi: "स्तनपान के समय गंभीर असहजता के कारण मैं काफी निराश हो गई थी। परामर्शदाता ने अत्यंत धैर्य के साथ हमारी बैठने की मुद्रा व बच्चे के मुंह के झुकाव को सुधारा। अब यह यात्रा पूरी तरह दर्द-रहित है।",
+    serviceName: "Lactation Counselings",
+    childName: "2 Weeks Old",
+    status: "Approved",
+    isFeatured: true,
+    createdAt: "2026-05-22T08:00:00.000Z"
+  }
+];
+
 export default function FirebaseProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [userProfile, setUserProfile] = useState<any | null>(null);
@@ -117,7 +169,7 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [priceHistoryLogs, setPriceHistoryLogs] = useState<PriceHistoryLog[]>([]);
-  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviews, setReviews] = useState<Review[]>(DEFAULT_REVIEWS);
   const [loading, setLoading] = useState<boolean>(true);
   const [authReady, setAuthReady] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -335,10 +387,8 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
   // 5. Sync Reviews & Testimonials
   useEffect(() => {
     const reviewsPath = 'reviews';
-    // If Admin, sync ALL reviews (Pending, Approved, Rejected). Otherwise, only sync Approved reviews.
-    const q = (user && isAdmin)
-      ? query(collection(db, reviewsPath))
-      : query(collection(db, reviewsPath), where('status', '==', 'Approved'));
+    // To make all reviews submitted by members publicly visible to everyone, we fetch all reviews.
+    const q = query(collection(db, reviewsPath));
 
     const unsubscribe = onSnapshot(
       q,
@@ -354,6 +404,7 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
             userEmail: d.userEmail || '',
             rating: Number(d.rating || 5),
             comment: d.comment || '',
+            commentHindi: d.commentHindi || undefined,
             serviceName: d.serviceName || '',
             childName: d.childName || '',
             mediaUrl: d.mediaUrl || '',
@@ -364,17 +415,32 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
           });
         });
 
-        // Dynamic sorting: Featured first, followed by Latest reviews
+        // Dynamic sorting of Firestore reviews: Featured first, followed by Latest reviews
         list.sort((a, b) => {
           if (a.isFeatured && !b.isFeatured) return -1;
           if (!a.isFeatured && b.isFeatured) return 1;
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         });
 
-        setReviews(list);
+        // Merge with DEFAULT_REVIEWS ensuring no duplicates by ID
+        const existingIds = new Set(list.map(r => r.id));
+        const combinedReviews = [
+          ...list,
+          ...DEFAULT_REVIEWS.filter(r => !existingIds.has(r.id))
+        ];
+
+        // Global sort: Featured pinned first, then by date desc
+        combinedReviews.sort((a, b) => {
+          if (a.isFeatured && !b.isFeatured) return -1;
+          if (!a.isFeatured && b.isFeatured) return 1;
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
+
+        setReviews(combinedReviews);
       },
       (err) => {
         console.warn("Reviews sync restriction / missing rules sync:", err.message);
+        setReviews(DEFAULT_REVIEWS);
       }
     );
 
@@ -472,6 +538,7 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
         const phoneStr = pendingRegistration?.phoneNumber || firebaseUser.phoneNumber || '+91 9999999999';
         const emailStr = pendingRegistration?.email || firebaseUser.email || `${firebaseUser.uid}@maatrisparsh.com`;
 
+        const initialIsVerified = firebaseUser.emailVerified || !!firebaseUser.phoneNumber;
         const newProfile = {
           uid: firebaseUser.uid,
           email: emailStr,
@@ -483,7 +550,7 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
           role: 'client',
           createdAt: new Date().toISOString(),
           lastLogin: new Date().toISOString(),
-          isVerified: true
+          isVerified: initialIsVerified
         };
 
         await setDoc(docRef, {
@@ -497,7 +564,7 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
           role: newProfile.role,
           createdAt: serverTimestamp(),
           lastLogin: serverTimestamp(),
-          isVerified: true
+          isVerified: initialIsVerified
         });
 
         setUserProfile(newProfile);
@@ -516,6 +583,12 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
       const cred = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(cred.user, { displayName: motherName });
       
+      try {
+        await sendEmailVerification(cred.user);
+      } catch (verifErr) {
+        console.error("Failed to dynamically dispatch verification email:", verifErr);
+      }
+      
       const userPath = `users/${cred.user.uid}`;
       try {
         const userRef = doc(db, 'users', cred.user.uid);
@@ -530,14 +603,15 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
           role: 'client',
           createdAt: serverTimestamp(),
           lastLogin: serverTimestamp(),
-          isVerified: true
+          isVerified: false
         };
         await setDoc(userRef, profileData);
         
         setUserProfile({
           ...profileData,
           createdAt: new Date().toISOString(),
-          lastLogin: new Date().toISOString()
+          lastLogin: new Date().toISOString(),
+          isVerified: false
         });
       } catch (err) {
         handleFirestoreError(err, OperationType.CREATE, userPath);
@@ -547,6 +621,31 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
       setLoading(false);
       throw err;
     }
+  };
+
+  const checkEmailVerificationStatus = async (): Promise<boolean> => {
+    if (!auth.currentUser) return false;
+    try {
+      await reload(auth.currentUser);
+      const updatedUser = auth.currentUser;
+      setUser(updatedUser);
+      
+      if (updatedUser.emailVerified) {
+        const userRef = doc(db, 'users', updatedUser.uid);
+        await setDoc(userRef, { isVerified: true }, { merge: true });
+        setUserProfile(prev => prev ? { ...prev, isVerified: true } : null);
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error("Error reloading and verifying email credentials:", err);
+      return false;
+    }
+  };
+
+  const resendSecondaryVerification = async () => {
+    if (!auth.currentUser) throw new Error("No authenticated user session.");
+    await sendEmailVerification(auth.currentUser);
   };
 
   const signInWithEmail = async (email: string, password: string) => {
@@ -1047,6 +1146,8 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
         setupRecaptcha,
         signInWithPhone,
         verifyPhoneCode,
+        checkEmailVerificationStatus,
+        resendSecondaryVerification,
         
         addOrUpdateService,
         deleteService,

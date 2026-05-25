@@ -13,12 +13,7 @@ service cloud.firestore {
     }
 
     function isVerified() {
-      return isSignedIn() && (
-        request.auth.token.get('email_verified', false) == true ||
-        request.auth.token.get('email', '').matches('(?i)^(test@gmail\\.com|spaar161\\.pk@gmail\\.com|.*@maatrisparsh\\.com)$') ||
-        request.auth.token.get('phone_number', '') != '' ||
-        request.auth.token.get('firebase', {}).get('sign_in_provider', '') == 'phone'
-      );
+      return isSignedIn();
     }
 
     function isAdmin() {
@@ -83,14 +78,29 @@ service cloud.firestore {
 
     // USERS COLLECTION MATCH
     match /users/{userId} {
-      allow get: if isAdmin() || (isVerified() && userId == request.auth.uid);
+      allow get: if isSignedIn() && (isAdmin() || userId == request.auth.uid);
       allow list: if isAdmin();
-      allow create: if isVerified() 
+      allow create: if isSignedIn() 
         && userId == request.auth.uid
-        && isValidUser(incoming());
-      allow update: if isVerified()
-        && (isAdmin() || userId == request.auth.uid)
-        && isValidUser(incoming());
+        && isValidUser(incoming())
+        && (
+          incoming().get('isVerified', false) == false ||
+          request.auth.token.get('email_verified', false) == true ||
+          request.auth.token.get('firebase', {}).get('sign_in_provider', '') == 'phone'
+        );
+      allow update: if isSignedIn()
+        && (
+          isAdmin() || (
+            userId == request.auth.uid
+            && isValidUser(incoming())
+            && incoming().get('role', 'client') == existing().get('role', 'client')
+            && (
+              existing().get('isVerified', false) == true ||
+              incoming().get('isVerified', false) == request.auth.token.get('email_verified', false) ||
+              request.auth.token.get('firebase', {}).get('sign_in_provider', '') == 'phone'
+            )
+          )
+        );
       allow delete: if isAdmin();
     }
 
@@ -130,9 +140,9 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
-    // REVIEWS COLLECTION MATCH (Public read for approved, admin read all, verified customer write, admin control)
+    // REVIEWS COLLECTION MATCH (Public read for everyone, verified customer write, admin control)
     match /reviews/{reviewId} {
-      allow get, list: if resource.data.status == 'Approved' || (isSignedIn() && isAdmin());
+      allow read: if true;
       allow create: if isVerified()
         && isValidId(reviewId)
         && incoming().userId == request.auth.uid
