@@ -123,25 +123,35 @@ export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: 
 
   // Try to play video when videoUrl becomes active
   useEffect(() => {
-    if (!useIframeFallback && videoRef.current && videoUrl) {
-      videoRef.current.load();
-      videoRef.current.play()
-        .then(() => {
-          setIsPlaying(true);
-          setHasEnded(false);
-        })
-        .catch(e => {
-          console.log('Initial load autoplay prevented:', e);
-          setIsPlaying(false);
-        });
+    const video = videoRef.current;
+    if (!useIframeFallback && video && videoUrl) {
+      // Force muted properties at the DOM level for browser compliance
+      video.muted = true;
+      video.defaultMuted = true;
+      setIsMuted(true);
+
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            setIsPlaying(true);
+            setHasEnded(false);
+          })
+          .catch(e => {
+            console.log('Initial load autoplay prevented or interrupted:', e);
+            setIsPlaying(false);
+          });
+      }
     }
   }, [videoUrl, useIframeFallback]);
 
   // Fallback autoplay handler for silent gesture triggers (scroll, click, touch) to bypass strict browser media policies
   useEffect(() => {
     const handleGesture = () => {
-      if (videoRef.current && videoRef.current.paused && !hasEnded) {
-        videoRef.current.play()
+      const video = videoRef.current;
+      if (video && video.paused && !hasEnded) {
+        video.muted = true;
+        video.play()
           .then(() => {
             setIsPlaying(true);
             setHasEnded(false);
@@ -381,9 +391,9 @@ export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: 
                         ref={videoRef}
                         src={resolveVideoSrc(videoUrl)}
                         className="h-[480px] sm:h-[550px] w-full object-cover transition-opacity duration-300"
-                        autoPlay
-                        muted={isMuted}
-                        playsInline
+                        autoPlay={true}
+                        muted={true}
+                        playsInline={true}
                         preload="auto"
                         onPlay={() => {
                           setIsPlaying(true);
