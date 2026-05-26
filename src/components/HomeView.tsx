@@ -84,7 +84,7 @@ export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const defaultVideo = 'https://www.instagram.com/reel/DYzl-FIsD4e/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==';
+  const defaultVideo = 'https://drive.google.com/file/d/1BX8fJwlrqoGRYYXHUESXhWOTqXnkxhjA/view';
 
   useEffect(() => {
     let active = true;
