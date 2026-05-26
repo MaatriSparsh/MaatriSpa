@@ -1,10 +1,52 @@
-import { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { ArrowRight, Leaf, Heart, Star, Sparkles, Smile, Baby, Calendar } from 'lucide-react';
+import { ArrowRight, Leaf, Heart, Star, Sparkles, Smile, Baby, Calendar, Play, Pause, Volume2, VolumeX, Upload, RotateCcw, Trash2 } from 'lucide-react';
 import { Service } from '../types';
 import { SERVICES as STATIC_SERVICES } from '../data';
 import { useFirebase } from './FirebaseProvider';
 import { useLanguage } from './LanguageProvider';
+
+// Helper functions for storing and retrieving the video to/from IndexedDB
+const openVideoDB = (): Promise<IDBDatabase> => {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('MaatriSparshVideoDB', 1);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains('media')) {
+        db.createObjectStore('media');
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+};
+
+const saveVideoToDB = async (blob: Blob): Promise<void> => {
+  const db = await openVideoDB();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction('media', 'readwrite');
+    const store = transaction.objectStore('media');
+    const request = store.put(blob, 'heroVideo');
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+};
+
+const getVideoFromDB = async (): Promise<Blob | null> => {
+  try {
+    const db = await openVideoDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction('media', 'readonly');
+      const store = transaction.objectStore('media');
+      const request = store.get('heroVideo');
+      request.onsuccess = () => resolve(request.result || null);
+      request.onerror = () => reject(request.error);
+    });
+  } catch (err) {
+    console.error('IndexedDB error:', err);
+    return null;
+  }
+};
 
 interface HomeViewProps {
   onNavigateToTab: (tab: string) => void;
@@ -12,8 +54,115 @@ interface HomeViewProps {
 }
 
 export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: HomeViewProps) {
-  const { services, reviews } = useFirebase();
+  const { services, reviews, isAdmin } = useFirebase();
   const { t, language } = useLanguage();
+
+  const [videoUrl, setVideoUrl] = useState<string>('');
+  const [isPlaying, setIsPlaying] = useState<boolean>(true);
+  const [isMuted, setIsMuted] = useState<boolean>(true);
+  const [hasEnded, setHasEnded] = useState<boolean>(false);
+  const [progress, setProgress] = useState<number>(0);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const defaultVideo = 'https://assets.mixkit.co/videos/preview/mixkit-mother-holding-her-newborn-baby-in-bed-41662-large.mp4';
+
+  useEffect(() => {
+    let active = true;
+    let objectUrl = '';
+
+    const loadVideo = async () => {
+      const storedBlob = await getVideoFromDB();
+      if (!active) return;
+      if (storedBlob) {
+        objectUrl = URL.createObjectURL(storedBlob);
+        setVideoUrl(objectUrl);
+      } else {
+        setVideoUrl(defaultVideo);
+      }
+    };
+
+    loadVideo();
+
+    return () => {
+      active = false;
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (videoRef.current && videoUrl) {
+      videoRef.current.load();
+      videoRef.current.play().catch(e => console.log('Autoplay prevented:', e));
+    }
+  }, [videoUrl]);
+
+  const togglePlay = () => {
+    if (!videoRef.current) return;
+    if (isPlaying) {
+      videoRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      if (hasEnded) {
+        videoRef.current.currentTime = 0;
+        setHasEnded(false);
+      }
+      videoRef.current.play().catch(err => console.log('Autoplay blocked:', err));
+      setIsPlaying(true);
+    }
+  };
+
+  const toggleMute = () => {
+    if (!videoRef.current) return;
+    videoRef.current.muted = !isMuted;
+    setIsMuted(!isMuted);
+  };
+
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('video/')) {
+      alert(language === 'en' ? 'Please upload a valid MP4/WebM video file.' : 'कृपया एक सही वीडियो फ़ाइल (.mp4) अपलोड करें।');
+      return;
+    }
+
+    try {
+      await saveVideoToDB(file);
+      const url = URL.createObjectURL(file);
+      setVideoUrl(url);
+      setHasEnded(false);
+      setIsPlaying(true);
+      if (videoRef.current) {
+        videoRef.current.src = url;
+        videoRef.current.load();
+        videoRef.current.play().catch(e => console.log('Autoplay blocked:', e));
+      }
+    } catch (err) {
+      console.error('Failed to save to local database:', err);
+    }
+  };
+
+  const clearCustomVideo = async () => {
+    try {
+      const db = await openVideoDB();
+      const transaction = db.transaction('media', 'readwrite');
+      const store = transaction.objectStore('media');
+      await store.delete('heroVideo');
+      setVideoUrl(defaultVideo);
+      setHasEnded(false);
+      setIsPlaying(true);
+      if (videoRef.current) {
+        videoRef.current.src = defaultVideo;
+        videoRef.current.load();
+        videoRef.current.play().catch(e => console.log('Autoplay blocked:', e));
+      }
+    } catch (err) {
+      console.error('Failed to delete custom video:', err);
+    }
+  };
 
   const activeServices = services && services.length > 0 ? services.filter(s => s.activeStatus) : STATIC_SERVICES;
 
@@ -148,27 +297,94 @@ export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: 
                 <div className="absolute -inset-3 rounded-2xl border-2 border-rose-200/50 -rotate-2" />
                 <div className="absolute inset-0 rounded-2xl bg-emerald-800/5 rotate-1" />
 
-                <div className="relative overflow-hidden rounded-xl shadow-lg border border-stone-200/60 bg-white">
-                  <img
-                    src="https://images.unsplash.com/photo-1544126592-807d81373555?auto=format&fit=crop&w=650&q=80"
-                    alt="Mother holding hands with newborn child during postpartum recovery period"
-                    className="h-[340.5px] w-full object-cover sm:h-[400px]"
-                    referrerPolicy="no-referrer"
-                  />
-                  {/* Internal graphic chip overlay */}
-                  <div className="absolute bottom-4 left-4 right-4 rounded-xl bg-white/95 backdrop-blur-xs p-3.5 border border-stone-100 shadow-lg flex items-center space-x-3">
-                    <div className="p-2 rounded-full bg-rose-50 text-rose-600 shrink-0">
-                      <Heart className="h-4.5 w-4.5 animate-pulse" />
-                    </div>
-                    <div>
-                      <span className="block text-[9px] font-bold uppercase tracking-widest text-[#a16207] font-mono">
-                        {language === 'en' ? 'Maatri Standards Verified' : 'सत्यापित आयुर्वेदिक मानक'}
-                      </span>
-                      <span className="block text-xs font-semibold text-stone-900 font-serif leading-tight">
-                        {language === 'en' ? 'Comforting Lactation & Postpartum Advisory' : 'स्तनपान मार्गदर्शन व शिशु कल्याण सेवाएं'}
-                      </span>
-                    </div>
+                <div className="relative overflow-hidden rounded-xl shadow-lg border border-stone-200/60 bg-stone-950 group">
+                  {videoUrl && (
+                    <video
+                      ref={videoRef}
+                      src={videoUrl}
+                      className="h-[480px] sm:h-[550px] w-full object-cover transition-opacity duration-300"
+                      autoPlay
+                      muted={isMuted}
+                      playsInline
+                      onTimeUpdate={(e) => {
+                        const v = e.currentTarget;
+                        if (v.duration) {
+                          setProgress((v.currentTime / v.duration) * 100);
+                        }
+                      }}
+                      onEnded={() => {
+                        setIsPlaying(false);
+                        setHasEnded(true);
+                      }}
+                    />
+                  )}
+
+                  {/* Play/Pause Center Indicator */}
+                  <div 
+                    onClick={togglePlay}
+                    className="absolute inset-0 flex items-center justify-center bg-black/10 group-hover:bg-black/25 transition-all duration-300 cursor-pointer"
+                  >
+                    {!isPlaying && (
+                      <motion.div
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="p-4 rounded-full bg-white/90 shadow-xl text-emerald-800 backdrop-blur-xs flex items-center justify-center transform group-hover:scale-105 transition-all"
+                      >
+                        {hasEnded ? <RotateCcw className="h-6 w-6" /> : <Play className="h-6 w-6 ml-0.5" />}
+                      </motion.div>
+                    )}
                   </div>
+
+                  {/* Control Overlays */}
+                  <div className="absolute top-4 right-4 flex items-center space-x-2 z-10">
+                    {/* Audio Toggle */}
+                    <button
+                      onClick={toggleMute}
+                      className="p-2.5 rounded-full bg-black/45 hover:bg-black/60 text-white backdrop-blur-xs transition hover:scale-105 cursor-pointer flex items-center justify-center"
+                      title={isMuted ? "Unmute Audio" : "Mute Audio"}
+                    >
+                      {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                    </button>
+                  </div>
+
+                  {/* Admin Direct Video Upload Button */}
+                  {isAdmin && (
+                    <div className="absolute top-4 left-4 flex flex-col space-y-2 z-10">
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="py-1.5 px-3 rounded-lg bg-emerald-800/90 text-white text-xs font-bold font-sans shadow-md flex items-center gap-1.5 hover:bg-emerald-700 backdrop-blur-xs transition active:scale-95 cursor-pointer"
+                      >
+                        <Upload className="h-3 w-3" />
+                        {language === 'en' ? 'Upload Video' : 'वीडियो अपलोड'}
+                      </button>
+                      <input 
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleVideoUpload}
+                        accept="video/*"
+                        className="hidden"
+                      />
+                      {videoUrl !== defaultVideo && (
+                        <button
+                          onClick={clearCustomVideo}
+                          className="py-1 px-2.5 rounded-md bg-rose-800/80 hover:bg-rose-700 text-white text-[10px] font-bold font-sans flex items-center gap-1 shadow-md transition active:scale-95 cursor-pointer"
+                        >
+                          <Trash2 className="h-2.5 w-2.5" />
+                          {language === 'en' ? 'Reset' : 'रीसेट करें'}
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Subtle Video Real-Time Progress Bar */}
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-stone-800/40 z-10 overflow-hidden">
+                    <div 
+                      className="h-full bg-emerald-600/90 transition-all duration-250" 
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+
+
                 </div>
               </div>
             </motion.div>

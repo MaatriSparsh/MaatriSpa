@@ -15,7 +15,9 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
   const { user, userProfile, addBooking, services } = useFirebase();
   const { t, language } = useLanguage();
 
-  const activeServices = services && services.length > 0 ? services : STATIC_SERVICES;
+  const allServices = services && services.length > 0 ? services : STATIC_SERVICES;
+  // Restrict to ONLY care packages mentioned, which correspond to 'postpartum_mother' category
+  const activeServices = allServices.filter(s => s.category === 'postpartum_mother');
 
   // Wizard steps: 'service' | 'practitioner' | 'slot' | 'details' | 'success'
   const [step, setStep] = useState<'service' | 'practitioner' | 'slot' | 'details' | 'success'>('service');

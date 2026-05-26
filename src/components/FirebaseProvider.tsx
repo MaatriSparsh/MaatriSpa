@@ -41,6 +41,7 @@ interface FirebaseContextType {
   bookings: Booking[];
   services: Service[];
   coupons: Coupon[];
+  allUsersList: any[];
   activityLogs: ActivityLog[];
   priceHistoryLogs: PriceHistoryLog[];
   loading: boolean;
@@ -169,6 +170,7 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [priceHistoryLogs, setPriceHistoryLogs] = useState<PriceHistoryLog[]>([]);
+  const [allUsersList, setAllUsersList] = useState<any[]>([]);
   const [reviews, setReviews] = useState<Review[]>(DEFAULT_REVIEWS);
   const [loading, setLoading] = useState<boolean>(true);
   const [authReady, setAuthReady] = useState<boolean>(false);
@@ -176,7 +178,7 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   const [pendingRegistration, setPendingRegistration] = useState<{ fullName: string; email: string; phoneNumber: string } | null>(null);
 
-  const isAdmin = user?.email?.toLowerCase() === 'spaar161.pk@gmail.com';
+  const isAdmin = user?.email?.toLowerCase() === 'maatrisparsh@gmail.com' || user?.email?.toLowerCase() === 'spaar161.pk@gmail.com';
 
   // Initialize Auth Observer
   useEffect(() => {
@@ -504,6 +506,66 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
     return () => unsubscribe();
   }, [user, isAdmin]);
 
+  // 6. Sync All Users List (Admin only)
+  useEffect(() => {
+    if (!isAdmin) {
+      setAllUsersList([]);
+      return;
+    }
+    const path = 'users';
+    const q = query(collection(db, path));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const list: any[] = [];
+      snapshot.forEach((docRef) => {
+        const d = docRef.data();
+        let formattedCreatedAt = '';
+        if (d.createdAt instanceof Timestamp) {
+          formattedCreatedAt = d.createdAt.toDate().toISOString();
+        } else if (d.createdAt && typeof d.createdAt.toDate === 'function') {
+          formattedCreatedAt = d.createdAt.toDate().toISOString();
+        } else if (d.createdAt) {
+          formattedCreatedAt = new Date(d.createdAt).toISOString();
+        }
+        
+        let formattedLastLogin = '';
+        if (d.lastLogin instanceof Timestamp) {
+          formattedLastLogin = d.lastLogin.toDate().toISOString();
+        } else if (d.lastLogin && typeof d.lastLogin.toDate === 'function') {
+          formattedLastLogin = d.lastLogin.toDate().toISOString();
+        } else if (d.lastLogin) {
+          formattedLastLogin = new Date(d.lastLogin).toISOString();
+        }
+
+        list.push({
+          uid: d.uid || docRef.id,
+          email: d.email || '',
+          motherName: d.motherName || d.fullName || 'Verified Member',
+          fullName: d.fullName || d.motherName || 'Verified Member',
+          phone: d.phone || d.phoneNumber || '',
+          phoneNumber: d.phoneNumber || d.phone || '',
+          profileImage: d.profileImage || '',
+          role: d.role || 'client',
+          createdAt: formattedCreatedAt,
+          lastLogin: formattedLastLogin,
+          isVerified: d.isVerified === true
+        });
+      });
+      list.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
+      setAllUsersList(list);
+    }, (err) => {
+      try {
+        handleFirestoreError(err, OperationType.GET, path);
+      } catch (e) {
+        console.error("Firestore user sync error handled:", e);
+      }
+    });
+    return () => unsubscribe();
+  }, [user, isAdmin]);
+
   const fetchOrCreateProfile = async (firebaseUser: FirebaseUser) => {
     const userPath = `users/${firebaseUser.uid}`;
     try {
@@ -750,6 +812,13 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
       
       // Auto-trigger confirmation dispatch logs on creation
       await logAdminAction('SEND_CONFIRMATION', `Auto-dispatched booking confirmations to Customer ${payload.customerName}. Email sent to [${payload.email || 'N/A'}] and SMS Alert sent to [${payload.phone || 'N/A'}].`);
+      
+      try {
+        // Run full asynchronous email generation and dispatch (User + Admin)
+        await sendBookingEmails(payload);
+      } catch (emailErr) {
+        console.error("Non-blocking error dispatching client-side email triggers:", emailErr);
+      }
     } catch (err) {
       handleFirestoreError(err, OperationType.CREATE, bookingPath);
     }
@@ -974,9 +1043,202 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
     }
   };
 
+  const sendBookingEmails = async (payload: any) => {
+    const serviceId = (import.meta as any).env.VITE_EMAILJS_SERVICE_ID;
+    const userTemplateId = (import.meta as any).env.VITE_EMAILJS_TEMPLATE_ID_USER;
+    const adminTemplateId = (import.meta as any).env.VITE_EMAILJS_TEMPLATE_ID_ADMIN;
+    const publicKey = (import.meta as any).env.VITE_EMAILJS_PUBLIC_KEY;
+    const resendApiKey = (import.meta as any).env.VITE_RESEND_API_KEY;
+
+    const adminEmailAddress = 'maatrisparsh@gmail.com';
+    const userEmailAddress = payload.email || payload.userDetails?.email || '';
+
+    const userEmailBody = `
+Dear ${payload.customerName || payload.userDetails?.motherName || 'Verified Member'},
+
+Your postnatal care booking with MaatriSparsh has been successfully confirmed.
+
+=================== BOOKING DETAILS ===================
+Booking Reference ID: ${payload.id || payload.bookingId}
+Selected Program: ${payload.serviceName || payload.service?.name || 'N/A'}
+Appointment Date: ${payload.bookingDate || payload.date}
+Appointment Time Slot: ${payload.bookingTime || payload.timeSlot}
+Assigned Therapist: ${payload.practitionerName || payload.practitioner?.name || 'To Be Assigned'}
+-----------------------------
+Delivery Details:
+- Date of Delivery: ${payload.userDetails?.deliveryDate || 'N/A'}
+- Type of Delivery: ${payload.userDetails?.deliveryType === 'normal' ? 'Normal / Vaginal Delivery' : payload.userDetails?.deliveryType === 'lscs' ? 'Cesarean / C-Section (LSCS)' : 'N/A'}
+- Residence City: ${payload.userDetails?.city || 'N/A'}
+- Custom Focus / Notes: ${payload.notes || payload.userDetails?.notes || 'None'}
+-----------------------------
+Payment Summary (To Be Handled):
+- Package Valuation: Rs. ${payload.priceInr || payload.service?.priceInr || 1499}/-
+- Indian Service Tax (18% GST): Rs. ${payload.gstInr || Math.round((payload.priceInr || 1499) * 0.18)}/-
+- Grand Total Invoice: Rs. ${payload.finalPriceInr || Math.round((payload.priceInr || 1499) * 1.18)}/-
+======================================================
+
+We are dedicated to supporting your postpartum rejuvenation and baby care. Our team will coordinate with you shortly on WhatsApp.
+
+In case of urgent queries, feel free to reply back to this mail.
+
+With warm regards,
+The MaatriSparsh Postpartum Care Sanctum Team
+https://maatrisparsh.com
+    `;
+
+    const adminEmailBody = `
+🚨 NEW CARE PACKAGE BOOKING ARRIVED!
+
+An automated postnatal session reservation has been scheduled in Raipur, Bhilai, or Durg region.
+
+=================== MOTHER'S PROFILE ===================
+Mother Name: ${payload.customerName || payload.userDetails?.motherName || 'N/A'}
+Primary Email Coord: ${payload.email || payload.userDetails?.email || 'N/A'}
+Direct WhatsApp Phone: ${payload.phone || payload.userDetails?.phone || 'N/A'}
+
+=================== TREATMENT DETAILS ===================
+Booking Reference: ${payload.id || payload.bookingId || 'N/A'}
+Booked Package: ${payload.serviceName || payload.service?.name || 'N/A'}
+Date & Shift Time: ${payload.bookingDate || payload.date || 'N/A'} @ ${payload.bookingTime || payload.timeSlot || 'N/A'}
+Therapist Specialist: ${payload.practitionerName || payload.practitioner?.name || 'N/A'}
+-----------------------------
+Clinical Parameters:
+- Delivery Date: ${payload.userDetails?.deliveryDate || 'N/A'}
+- Delivery Type: ${payload.userDetails?.deliveryType || 'N/A'}
+- Surgical Wound Suture condition (for LSCS): ${payload.userDetails?.stitchCondition || 'N/A'}
+- Baby Name / Age Weeks: ${payload.userDetails?.babyName || 'N/A'} (${payload.userDetails?.babyAgeWeeks || 'N/A'} Weeks old)
+-----------------------------
+Home Visit Physical Address:
+- Full Residence Location: ${payload.userDetails?.address || 'N/A'}
+- Target City: ${payload.userDetails?.city || 'N/A'}
+- Regional PIN code: ${payload.userDetails?.pincode || 'N/A'}
+-----------------------------
+Finance Info:
+- Base Rate: Rs. ${payload.priceInr || 1499}/-
+- GST Aspect (18%): Rs. ${payload.gstInr || Math.round((payload.priceInr || 1499) * 0.18)}/-
+- Grand Total INR: Rs. ${payload.finalPriceInr || Math.round((payload.priceInr || 1499) * 1.18)}/-
+======================================================
+
+Execute WhatsApp coordination with the client immediately!
+
+System Auto-Logger,
+MaatriSparsh Internal Notification Service
+    `;
+
+    // 1. Dispatch User Email (via EmailJS Public Endpoint)
+    if (serviceId && userTemplateId && publicKey) {
+      try {
+        await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            service_id: serviceId,
+            template_id: userTemplateId,
+            user_id: publicKey,
+            template_params: {
+              to_name: payload.customerName || payload.userDetails?.motherName,
+              to_email: userEmailAddress,
+              booking_id: payload.id || payload.bookingId,
+              service_name: payload.serviceName || payload.service?.name,
+              booking_date: payload.bookingDate || payload.date,
+              booking_time: payload.bookingTime || payload.timeSlot,
+              final_price: payload.finalPriceInr,
+              message_body: userEmailBody
+            }
+          })
+        });
+        console.log(`[EmailJS] Booking confirmation successfully sent to user ${userEmailAddress}`);
+      } catch (err) {
+        console.error('Failed to dispatch user confirmation email via EmailJS:', err);
+      }
+    } else if (resendApiKey) {
+      try {
+        await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${resendApiKey}`
+          },
+          body: JSON.stringify({
+            from: 'MaatriSparsh Care <care@maatrisparsh.com>',
+            to: [userEmailAddress],
+            subject: `Booking Confirmed: MaatriSparsh Care Package Session (${payload.id || payload.bookingId})`,
+            text: userEmailBody
+          })
+        });
+        console.log(`[Resend] Booking confirmation successfully sent to user ${userEmailAddress}`);
+      } catch (err) {
+        console.error('Failed to dispatch user confirmation email via Resend:', err);
+      }
+    } else {
+      console.warn('[Email Integration] User SMTP/Email credentials not configured yet. Detailed email payload generated inside activityLogs.');
+    }
+
+    // 2. Dispatch Admin Email (via EmailJS Public Endpoint)
+    if (serviceId && adminTemplateId && publicKey) {
+      try {
+        await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            service_id: serviceId,
+            template_id: adminTemplateId,
+            user_id: publicKey,
+            template_params: {
+              to_name: 'MaatriSparsh Admin',
+              to_email: adminEmailAddress,
+              booking_id: payload.id || payload.bookingId,
+              service_name: payload.serviceName || payload.service?.name,
+              booking_date: payload.bookingDate || payload.date,
+              booking_time: payload.bookingTime || payload.timeSlot,
+              final_price: payload.finalPriceInr,
+              message_body: adminEmailBody
+            }
+          })
+        });
+        console.log(`[EmailJS] New booking notification successfully sent to admin ${adminEmailAddress}`);
+      } catch (err) {
+        console.error('Failed to dispatch admin notification email via EmailJS:', err);
+      }
+    } else if (resendApiKey) {
+      try {
+        await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${resendApiKey}`
+          },
+          body: JSON.stringify({
+            from: 'MaatriSparsh Care Alerts <alerts@maatrisparsh.com>',
+            to: [adminEmailAddress],
+            subject: `🚨 Booking Arrived: New Care Package scheduled (${payload.id || payload.bookingId})`,
+            text: adminEmailBody
+          })
+        });
+        console.log(`[Resend] New booking notification successfully sent to admin ${adminEmailAddress}`);
+      } catch (err) {
+        console.error('Failed to dispatch admin notification email via Resend:', err);
+      }
+    } else {
+      console.warn('[Email Integration] Admin SMTP/Email credentials not configured yet. Detailed email payload generated inside activityLogs.');
+    }
+
+    try {
+      // Record detailed template logging documents in activityLogs collection
+      await addDoc(collection(db, 'activityLogs'), {
+        adminEmail: adminEmailAddress,
+        action: 'EMAIL_BOUND_DATA',
+        details: `USER CONFIRMATION EMAIL (To: ${userEmailAddress}):\n${userEmailBody}\n\nADMIN NOTIFICATION EMAIL (To: ${adminEmailAddress}):\n${adminEmailBody}`,
+        timestamp: new Date().toISOString()
+      });
+    } catch (logErr) {
+      console.error("Failed to append full raw email logs:", logErr);
+    }
+  };
+
   const logAdminAction = async (action: string, details: string) => {
     try {
-      const emailLog = user?.email || 'spaar161.pk@gmail.com';
+      const emailLog = user?.email || 'maatrisparsh@gmail.com';
       await addDoc(collection(db, 'activityLogs'), {
         adminEmail: emailLog,
         action,
@@ -1127,6 +1389,7 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
         bookings,
         services,
         coupons,
+        allUsersList,
         activityLogs,
         priceHistoryLogs,
         loading,

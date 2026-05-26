@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useFirebase } from './FirebaseProvider';
-import { X, Calendar, User, Clock, FileText, Heart, ShieldAlert, Check, Edit2, CheckCircle2, MessageSquare, Mail } from 'lucide-react';
+import { X, Calendar, User, Clock, FileText, Heart, ShieldAlert, Check, Edit2, CheckCircle2, MessageSquare, Mail, Users, Smartphone } from 'lucide-react';
 import { Booking } from '../types';
 
 interface AdminPortalModalProps {
@@ -9,13 +9,13 @@ interface AdminPortalModalProps {
 }
 
 export default function AdminPortalModal({ onClose, onOpenBookingWizard }: AdminPortalModalProps) {
-  const { bookings, cancelBookingInFirestore, editBookingInFirestore, activityLogs } = useFirebase();
+  const { bookings, cancelBookingInFirestore, editBookingInFirestore, activityLogs, allUsersList } = useFirebase();
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
   // Tab State
-  const [activeTab, setActiveTab] = useState<'bookings' | 'logs'>('bookings');
+  const [activeTab, setActiveTab ] = useState<'bookings' | 'logs' | 'users'>('bookings');
 
   // Inline Editor State
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -138,6 +138,16 @@ export default function AdminPortalModal({ onClose, onOpenBookingWizard }: Admin
             Active Bookings ({sortedBookings.length})
           </button>
           <button
+            onClick={() => setActiveTab('users')}
+            className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition cursor-pointer ${
+              activeTab === 'users'
+                ? 'bg-white border-b-2 border-rose-800 text-rose-900'
+                : 'text-stone-500 hover:text-stone-800 hover:bg-stone-100/50'
+            }`}
+          >
+            Registered Mothers ({allUsersList?.length || 0})
+          </button>
+          <button
             onClick={() => setActiveTab('logs')}
             className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition cursor-pointer ${
               activeTab === 'logs'
@@ -145,7 +155,7 @@ export default function AdminPortalModal({ onClose, onOpenBookingWizard }: Admin
                 : 'text-stone-500 hover:text-stone-800 hover:bg-stone-100/50'
             }`}
           >
-            Live Activity & Comms Alerts ({activityLogs.length})
+            Live Activity Logs ({activityLogs.length})
           </button>
         </div>
 
@@ -159,7 +169,7 @@ export default function AdminPortalModal({ onClose, onOpenBookingWizard }: Admin
             </div>
           )}
 
-          {activeTab === 'bookings' ? (
+          {activeTab === 'bookings' && (
             sortedBookings.length === 0 ? (
               <div className="text-center py-12 px-4 space-y-4">
                 <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-stone-100 text-stone-400">
@@ -282,7 +292,7 @@ export default function AdminPortalModal({ onClose, onOpenBookingWizard }: Admin
                               </div>
                             ) : (
                               <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-4 text-xs">
-                                <div className="flex items-center text-stone-600 gap-1.5Col font-medium">
+                                <div className="flex items-center text-stone-600 gap-1.5 font-medium">
                                   <User className="h-3.5 w-3.5 text-stone-400" />
                                   <span>Client: <strong>{booking.userDetails?.motherName || booking.customerName}</strong> ({booking.userDetails?.phone || booking.phone})</span>
                                 </div>
@@ -308,7 +318,7 @@ export default function AdminPortalModal({ onClose, onOpenBookingWizard }: Admin
 
                                     {booking.userDetails?.deliveryType && (
                                       <div className="text-stone-800 flex flex-wrap gap-x-3 gap-y-1 text-xs">
-                                        <span className="bg-amber-100/60 text-amber-950 font-semibold px-2 py-0.5 rounded border border-amber-200">
+                                        <span className="bg-amber-100/60 text-amber-955 font-semibold px-2 py-0.5 rounded border border-amber-200">
                                           🤰 {booking.userDetails.deliveryType === 'normal' ? 'Normal / Vaginal Delivery' : 'Cesarean / C-Section (LSCS)'}
                                         </span>
                                         {booking.userDetails.deliveryDate && (
@@ -400,7 +410,102 @@ export default function AdminPortalModal({ onClose, onOpenBookingWizard }: Admin
                 })}
               </div>
             )
-          ) : (
+          )}
+
+          {activeTab === 'users' && (
+            <div className="space-y-4">
+              <div className="bg-emerald-50/50 border border-emerald-200/40 p-4 rounded-xl text-xs text-stone-750 flex items-start gap-2.5">
+                <Users className="h-5 w-5 text-emerald-800 mt-0.5 shrink-0" />
+                <div>
+                  <strong className="text-emerald-950 font-serif block text-sm">Mother Sanctum Directory ({allUsersList?.length || 0})</strong>
+                  <p className="mt-0.5 leading-relaxed text-stone-650">The historical registration catalog of all postnatal mothers and users signed up to MaatriSparsh. Real-time profiles with direct WhatsApp coordination indicators are presented below.</p>
+                </div>
+              </div>
+
+              {(!allUsersList || allUsersList.length === 0) ? (
+                <div className="text-center py-12 px-4 space-y-4">
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-stone-100 text-stone-400">
+                    <User className="h-7 w-7" />
+                  </div>
+                  <p className="text-xs text-stone-500 font-mono">No registered users found.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {allUsersList.map((usr: any) => {
+                    const isUserAdmin = usr.role === 'admin' || usr.email?.toLowerCase() === 'maatrisparsh@gmail.com' || usr.email?.toLowerCase() === 'spaar161.pk@gmail.com';
+                    return (
+                      <div 
+                        key={usr.uid} 
+                        className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs flex flex-col justify-between hover:border-emerald-500 transition-all group"
+                      >
+                        <div className="space-y-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center space-x-2.5">
+                              <div className="h-9 w-9 rounded-full bg-emerald-50 text-emerald-950 flex items-center justify-center font-bold font-serif text-sm border border-emerald-100 uppercase">
+                                {usr.motherName ? usr.motherName.substring(0, 2) : 'MS'}
+                              </div>
+                              <div>
+                                <h4 className="font-serif font-black text-stone-900 text-sm leading-tight flex flex-wrap items-center gap-1.5">
+                                  {usr.motherName || usr.fullName}
+                                  {isUserAdmin && (
+                                    <span className="text-[9px] font-mono tracking-wider font-extrabold uppercase bg-rose-50 text-rose-800 border border-rose-100 px-1 py-0.5 rounded">
+                                      Admin
+                                    </span>
+                                  )}
+                                </h4>
+                                <span className="text-[9px] text-stone-400 font-mono block mt-0.5">UID: {usr.uid.substring(0, 10)}...</span>
+                              </div>
+                            </div>
+                            
+                            <span className={`text-[10px] px-2 py-0.5 rounded-xs font-bold flex items-center gap-1 ${
+                              usr.isVerified 
+                                ? 'bg-emerald-50 text-emerald-800 border border-emerald-100' 
+                                : 'bg-amber-50 text-amber-800 border border-amber-100'
+                            }`}>
+                              <CheckCircle2 className="h-3 w-3" />
+                              {usr.isVerified ? 'Verified' : 'Pending'}
+                            </span>
+                          </div>
+
+                          <div className="space-y-1.5 border-t border-stone-100 pt-2.5 text-xs text-stone-600">
+                            <div className="flex items-center gap-2">
+                              <Mail className="h-3.5 w-3.5 text-stone-400 shrink-0" />
+                              <a href={`mailto:${usr.email}`} className="hover:text-emerald-900 hover:underline transition truncate">
+                                {usr.email}
+                              </a>
+                            </div>
+                            
+                            {usr.phone && (
+                              <div className="flex items-center gap-2">
+                                <Smartphone className="h-3.5 w-3.5 text-stone-400 shrink-0" />
+                                <a href={`https://wa.me/${usr.phone.replace(/\+/g, '').replace(/\s+/g, '')}`} target="_blank" rel="noreferrer" className="hover:text-emerald-900 font-mono transition flex items-center gap-1">
+                                  {usr.phone}
+                                  <span className="text-[9px] text-emerald-700 bg-emerald-50 px-1 py-[1px] rounded font-sans scale-90 border border-emerald-100">WhatsApp 💬</span>
+                                </a>
+                              </div>
+                            )}
+
+                            <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-stone-50 text-[10px] text-stone-400 font-mono">
+                              <div>
+                                <span className="block text-stone-300 text-[8px] uppercase tracking-wider">Signed Up</span>
+                                <span>{usr.createdAt ? new Date(usr.createdAt).toLocaleDateString() : 'N/A'}</span>
+                              </div>
+                              <div>
+                                <span className="block text-stone-300 text-[8px] uppercase tracking-wider">Last Login</span>
+                                <span>{usr.lastLogin ? new Date(usr.lastLogin).toLocaleDateString() : 'N/A'}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'logs' && (
             /* System Activity logs showing live email and SMS confirmation triggers */
             <div className="space-y-3.5">
               <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl text-xs text-stone-700 space-y-1">
