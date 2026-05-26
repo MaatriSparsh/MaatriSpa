@@ -411,6 +411,10 @@ export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: 
                         onEnded={() => {
                           setIsPlaying(false);
                           setHasEnded(true);
+                          if (videoRef.current) {
+                            videoRef.current.currentTime = 0;
+                          }
+                          setProgress(0);
                         }}
                         onError={() => {
                           if (videoUrl.includes('drive.google.com')) {
