@@ -48,6 +48,24 @@ const getVideoFromDB = async (): Promise<Blob | null> => {
   }
 };
 
+const getDriveId = (url: string): string => {
+  if (!url) return '';
+  const matchD = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  const matchId = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  return (matchD && matchD[1]) || (matchId && matchId[1]) || '';
+};
+
+const resolveVideoSrc = (url: string): string => {
+  if (!url) return '';
+  if (url.includes('drive.google.com')) {
+    const id = getDriveId(url);
+    if (id) {
+      return `https://drive.google.com/uc?export=download&id=${id}`;
+    }
+  }
+  return url;
+};
+
 interface HomeViewProps {
   onNavigateToTab: (tab: string) => void;
   onOpenBookingWithService: (serviceId: string) => void;
@@ -62,10 +80,11 @@ export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: 
   const [isMuted, setIsMuted] = useState<boolean>(true);
   const [hasEnded, setHasEnded] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
+  const [useIframeFallback, setUseIframeFallback] = useState<boolean>(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const defaultVideo = 'https://assets.mixkit.co/videos/preview/mixkit-mother-holding-her-newborn-baby-in-bed-41662-large.mp4';
+  const defaultVideo = 'https://drive.google.com/file/d/1BX8fJwlrqoGRYYXHUESXhWOTqXnkxhjA/view';
 
   useEffect(() => {
     let active = true;
@@ -92,9 +111,19 @@ export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: 
     };
   }, []);
 
+  // Sync fallback helper when url changes
+  useEffect(() => {
+    if (videoUrl && videoUrl.includes('drive.google.com')) {
+      // Start with normal stream, but error callback switches to custom iFrame if rate limited
+      setUseIframeFallback(false);
+    } else {
+      setUseIframeFallback(false);
+    }
+  }, [videoUrl]);
+
   // Try to play video when videoUrl becomes active
   useEffect(() => {
-    if (videoRef.current && videoUrl) {
+    if (!useIframeFallback && videoRef.current && videoUrl) {
       videoRef.current.load();
       videoRef.current.play()
         .then(() => {
@@ -106,7 +135,7 @@ export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: 
           setIsPlaying(false);
         });
     }
-  }, [videoUrl]);
+  }, [videoUrl, useIframeFallback]);
 
   // Fallback autoplay handler for silent gesture triggers (scroll, click, touch) to bypass strict browser media policies
   useEffect(() => {
@@ -339,63 +368,83 @@ export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: 
 
                 <div className="relative overflow-hidden rounded-xl shadow-lg border border-stone-200/60 bg-stone-950 group">
                   {videoUrl && (
-                    <video
-                      ref={videoRef}
-                      src={videoUrl}
-                      className="h-[480px] sm:h-[550px] w-full object-cover transition-opacity duration-300"
-                      autoPlay
-                      muted={isMuted}
-                      playsInline
-                      preload="auto"
-                      onPlay={() => {
-                        setIsPlaying(true);
-                        setHasEnded(false);
-                      }}
-                      onPause={() => {
-                        setIsPlaying(false);
-                      }}
-                      onTimeUpdate={(e) => {
-                        const v = e.currentTarget;
-                        if (v.duration) {
-                          setProgress((v.currentTime / v.duration) * 100);
-                        }
-                      }}
-                      onEnded={() => {
-                        setIsPlaying(false);
-                        setHasEnded(true);
-                      }}
-                    />
+                    useIframeFallback ? (
+                      <iframe
+                        src={`https://drive.google.com/file/d/${getDriveId(videoUrl)}/preview?autoplay=1&mute=1`}
+                        className="h-[480px] sm:h-[550px] w-full object-cover border-0"
+                        allow="autoplay; encrypted-media"
+                        allowFullScreen
+                        id="hero-gd-iframe-player"
+                      ></iframe>
+                    ) : (
+                      <video
+                        ref={videoRef}
+                        src={resolveVideoSrc(videoUrl)}
+                        className="h-[480px] sm:h-[550px] w-full object-cover transition-opacity duration-300"
+                        autoPlay
+                        muted={isMuted}
+                        playsInline
+                        preload="auto"
+                        onPlay={() => {
+                          setIsPlaying(true);
+                          setHasEnded(false);
+                        }}
+                        onPause={() => {
+                          setIsPlaying(false);
+                        }}
+                        onTimeUpdate={(e) => {
+                          const v = e.currentTarget;
+                          if (v.duration) {
+                            setProgress((v.currentTime / v.duration) * 100);
+                          }
+                        }}
+                        onEnded={() => {
+                          setIsPlaying(false);
+                          setHasEnded(true);
+                        }}
+                        onError={() => {
+                          if (videoUrl.includes('drive.google.com')) {
+                            console.warn("Direct stream load failed, switching to Google Drive embedded iframe fallback.");
+                            setUseIframeFallback(true);
+                          }
+                        }}
+                      />
+                    )
                   )}
 
                   {/* Play/Pause Center Indicator */}
-                  <div 
-                    onClick={togglePlay}
-                    className="absolute inset-0 flex items-center justify-center bg-black/15 group-hover:bg-black/25 transition-all duration-300 cursor-pointer"
-                  >
-                    {!isPlaying && (
-                      <motion.div
-                        initial={{ scale: 0.85, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.85, opacity: 0 }}
-                        transition={{ duration: 0.25, ease: "easeOut" }}
-                        className="p-5 rounded-full bg-white/95 text-emerald-800 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md flex items-center justify-center transform group-hover:scale-110 active:scale-95 transition-all duration-300 border border-white/20 select-none"
-                      >
-                        {hasEnded ? <RotateCcw className="h-6 w-6" /> : <Play className="h-6 w-6 fill-current ml-0.5" />}
-                      </motion.div>
-                    )}
-                  </div>
+                  {!useIframeFallback && (
+                    <div 
+                      onClick={togglePlay}
+                      className="absolute inset-0 flex items-center justify-center bg-black/15 group-hover:bg-black/25 transition-all duration-300 cursor-pointer"
+                    >
+                      {!isPlaying && (
+                        <motion.div
+                          initial={{ scale: 0.85, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          exit={{ scale: 0.85, opacity: 0 }}
+                          transition={{ duration: 0.25, ease: "easeOut" }}
+                          className="p-5 rounded-full bg-white/95 text-emerald-800 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md flex items-center justify-center transform group-hover:scale-110 active:scale-95 transition-all duration-300 border border-white/20 select-none"
+                        >
+                          {hasEnded ? <RotateCcw className="h-6 w-6" /> : <Play className="h-6 w-6 fill-current ml-0.5" />}
+                        </motion.div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Control Overlays */}
-                  <div className="absolute top-4 right-4 flex items-center space-x-2 z-10">
-                    {/* Audio Toggle */}
-                    <button
-                      onClick={toggleMute}
-                      className="p-2.5 rounded-full bg-black/45 hover:bg-black/60 text-white backdrop-blur-xs transition hover:scale-105 cursor-pointer flex items-center justify-center"
-                      title={isMuted ? "Unmute Audio" : "Mute Audio"}
-                    >
-                      {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-                    </button>
-                  </div>
+                  {!useIframeFallback && (
+                    <div className="absolute top-4 right-4 flex items-center space-x-2 z-10">
+                      {/* Audio Toggle */}
+                      <button
+                        onClick={toggleMute}
+                        className="p-2.5 rounded-full bg-black/45 hover:bg-black/60 text-white backdrop-blur-xs transition hover:scale-105 cursor-pointer flex items-center justify-center"
+                        title={isMuted ? "Unmute Audio" : "Mute Audio"}
+                      >
+                        {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  )}
 
                   {/* Admin Direct Video Upload Button */}
                   {isAdmin && (
@@ -427,12 +476,14 @@ export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: 
                   )}
 
                   {/* Subtle Video Real-Time Progress Bar */}
-                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-stone-800/40 z-10 overflow-hidden">
-                    <div 
-                      className="h-full bg-emerald-600/90 transition-all duration-250" 
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
+                  {!useIframeFallback && (
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-stone-800/40 z-10 overflow-hidden">
+                      <div 
+                        className="h-full bg-emerald-600/90 transition-all duration-250" 
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                  )}
 
 
                 </div>
