@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { X, Calendar, User, Clock, Check, ChevronRight, ChevronLeft, Heart, Baby, CheckCircle, Award } from 'lucide-react';
 import { Service, Practitioner, Booking } from '../types';
 import { SERVICES as STATIC_SERVICES, PRACTITIONERS, TIME_SLOTS } from '../data';
@@ -39,6 +39,30 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
   const [email, setEmail] = useState(() => userProfile?.email || user?.email || '');
   const [phone, setPhone] = useState(() => userProfile?.phone || '');
   const [notes, setNotes] = useState('');
+
+  // Custom package criteria states
+  const [deliveryType, setDeliveryType] = useState<'normal' | 'lscs' | 'none'>(() => {
+    if (selectedService.id.startsWith('normal-')) return 'normal';
+    if (selectedService.id.startsWith('lscs-')) return 'lscs';
+    return 'none';
+  });
+  const [deliveryDate, setDeliveryDate] = useState('');
+  const [city, setCity] = useState<'Raipur' | 'Bhilai' | 'Durg' | ''>('');
+  const [address, setAddress] = useState('');
+  const [pincode, setPincode] = useState('');
+  const [stitchCondition, setStitchCondition] = useState('');
+  const [focusArea, setFocusArea] = useState('');
+  const [areaAccepted, setAreaAccepted] = useState(false);
+
+  useEffect(() => {
+    if (selectedService.id.startsWith('normal-')) {
+      setDeliveryType('normal');
+    } else if (selectedService.id.startsWith('lscs-')) {
+      setDeliveryType('lscs');
+    } else {
+      setDeliveryType('none');
+    }
+  }, [selectedService]);
 
   const [validationError, setValidationError] = useState('');
   const [createdBooking, setCreatedBooking] = useState<Booking | null>(null);
@@ -125,6 +149,62 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
       return;
     }
 
+    // Dynamic Package Criteria validation
+    if (selectedService.category === 'postpartum_mother') {
+      if (!deliveryDate) {
+        setValidationError(
+          language === 'en'
+            ? 'Please specify your Date of Delivery / Surgery.'
+            : 'कृपया अपने प्रसव / सर्जरी की तिथि का चयन करें।'
+        );
+        return;
+      }
+      if (!city) {
+        setValidationError(
+          language === 'en'
+            ? 'Postpartum home care is exclusive to Raipur, Bhilai, and Durg. Please select your city.'
+            : 'प्रसवोत्तर होम केयर केवल रायपुर, भिलाई और दुर्ग में उपलब्ध है। कृपया अपना शहर चुनें।'
+        );
+        return;
+      }
+      if (!address || address.trim().length < 8) {
+        setValidationError(
+          language === 'en'
+            ? 'Please provide a complete residential address for therapist home visits.'
+            : 'थेरेपिस्ट होम विजिट के लिए कृपया पूरा पता भरें।'
+        );
+        return;
+      }
+      if (!areaAccepted) {
+        setValidationError(
+          language === 'en'
+            ? 'You must confirm that your residence is within Raipur, Bhilai, or Durg metro area.'
+            : 'कृपया पुष्टि करें कि आपका निवास रायपुर, भिलाई या दुर्ग क्षेत्र के भीतर है।'
+        );
+        return;
+      }
+
+      // Check for delivery type mismatch
+      const isNormalColl = selectedService.id.startsWith('normal-');
+      const isLscsColl = selectedService.id.startsWith('lscs-');
+      if (isNormalColl && deliveryType !== 'normal') {
+        setValidationError(
+          language === 'en'
+            ? 'This is a Normal Delivery Care package, but C-Section is specified as delivery type. Please align your selection.'
+            : 'यह नॉर्मल डिलीवरी केयर पैकेज है, लेकिन प्रसव का प्रकार सिजेरियन चुना गया है। कृपया संरेखित करें।'
+        );
+        return;
+      }
+      if (isLscsColl && deliveryType !== 'lscs') {
+        setValidationError(
+          language === 'en'
+            ? 'This is an LSCS (Cesarean) Care package, but Normal Delivery is specified as delivery type. Please align your selection.'
+            : 'यह सिजेरियन केयर पैकेज है, लेकिन प्रसव का प्रकार नॉर्मल डिलीवरी चुना गया है। कृपया संरेखित करें।'
+        );
+        return;
+      }
+    }
+
     const bookingId = `msb-${Math.floor(100000 + Math.random() * 900000)}`;
 
     const bookingPayload: Booking = {
@@ -152,7 +232,14 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
         babyAgeWeeks: babyAgeWeeks || undefined,
         email,
         phone,
-        notes: notes || undefined
+        notes: notes || undefined,
+        deliveryType: selectedService.category === 'postpartum_mother' ? deliveryType : undefined,
+        deliveryDate: selectedService.category === 'postpartum_mother' ? deliveryDate : undefined,
+        city: selectedService.category === 'postpartum_mother' ? city : undefined,
+        address: selectedService.category === 'postpartum_mother' ? address : undefined,
+        pincode: selectedService.category === 'postpartum_mother' ? (pincode || undefined) : undefined,
+        stitchCondition: selectedService.id.startsWith('lscs-') ? (stitchCondition || undefined) : undefined,
+        focusArea: selectedService.category === 'consultation' ? (focusArea || undefined) : undefined,
       },
       status: 'Confirmed',
       
@@ -190,7 +277,14 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
           babyAgeWeeks: babyAgeWeeks || undefined,
           email,
           phone,
-          notes: notes || undefined
+          notes: notes || undefined,
+          deliveryType: selectedService.category === 'postpartum_mother' ? deliveryType : undefined,
+          deliveryDate: selectedService.category === 'postpartum_mother' ? deliveryDate : undefined,
+          city: selectedService.category === 'postpartum_mother' ? city : undefined,
+          address: selectedService.category === 'postpartum_mother' ? address : undefined,
+          pincode: selectedService.category === 'postpartum_mother' ? (pincode || undefined) : undefined,
+          stitchCondition: selectedService.id.startsWith('lscs-') ? (stitchCondition || undefined) : undefined,
+          focusArea: selectedService.category === 'consultation' ? (focusArea || undefined) : undefined,
         },
         status: 'Confirmed',
         
@@ -545,6 +639,194 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
                   />
                 </div>
               </div>
+
+              {/* --- DYNAMIC PACKAGE-SPECIFIC CRITERIA SECTION --- */}
+              {selectedService.category === 'postpartum_mother' && (
+                <div className="p-4 rounded-2xl bg-amber-50/50 border border-amber-200/40 space-y-4">
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-amber-800 font-bold block">
+                    📋 {language === 'en' ? 'Postpartum Recovery Validation' : 'प्रसवोत्तर रिकवरी भौतिक सत्यापन मानदंड'}
+                  </span>
+                  
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    {/* Delivery / Surgery Date */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider block">
+                        {selectedService.id.startsWith('lscs-')
+                          ? (language === 'en' ? 'Date of C-Section Surgery *' : 'सिजेरियन सर्जरी की तिथि *')
+                          : (language === 'en' ? 'Date of Normal Delivery *' : 'नॉर्मल डिलीवरी की तिथि *')}
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={deliveryDate}
+                        onChange={(e) => setDeliveryDate(e.target.value)}
+                        className="w-full rounded-xl border border-stone-200 bg-white py-2 px-3 text-xs font-medium focus:border-emerald-800 focus:outline-hidden"
+                      />
+                    </div>
+
+                    {/* Confirm Delivery Type */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider block">
+                        {language === 'en' ? 'Confirm Delivery Type *' : 'प्रसव के प्रकार की पुष्टि *'}
+                      </label>
+                      <select
+                        value={deliveryType}
+                        onChange={(e) => setDeliveryType(e.target.value as any)}
+                        className="w-full rounded-xl border border-stone-200 bg-white py-2.5 px-3 text-xs font-medium focus:border-emerald-800 focus:outline-hidden"
+                      >
+                        <option value="normal">{language === 'en' ? 'Normal / Vaginal Delivery' : 'नॉर्मल प्रसव (Vaginal)'}</option>
+                        <option value="lscs">{language === 'en' ? 'C-Section / Cesarean (LSCS)' : 'सिजेरियन प्रसव (C-Section)'}</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* If C-section, state of stitches */}
+                  {selectedService.id.startsWith('lscs-') && (
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider block">
+                        {language === 'en' ? 'Suture / Stitch Status' : 'टांकों की वर्तमान स्थिति'}
+                      </label>
+                      <select
+                        value={stitchCondition}
+                        onChange={(e) => setStitchCondition(e.target.value)}
+                        className="w-full rounded-xl border border-stone-200 bg-white py-2.5 px-3 text-xs font-medium focus:border-emerald-800 focus:outline-hidden"
+                      >
+                        <option value="">-- {language === 'en' ? 'Select Stitch Status' : 'टांकों की स्थिति चुनें'} --</option>
+                        <option value="dissolvable">{language === 'en' ? 'Dissolvable (Under healing)' : 'घुलनशील टांके (भर रहे हैं)'}</option>
+                        <option value="staples-removed">{language === 'en' ? 'Staples / Stitches Removed' : 'टांके / स्टेपल निकाल दिए गए हैं'}</option>
+                        <option value="painful">{language === 'en' ? 'Active Pain / Tender Wound' : 'सक्रिय दर्द / टेंडर घाव'}</option>
+                        <option value="not-sure">{language === 'en' ? 'Unsure (Will check with therapist)' : 'निश्चित नहीं (थेरेपिस्ट से सलाह लेंगे)'}</option>
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Residential Home Address (exclusive Raipur metro) */}
+                  <div className="space-y-3 pt-2 border-t border-amber-200/30">
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-[#a16207] font-bold block">
+                      📍 {language === 'en' ? 'Home Delivery Service Coordinates (Raipur-Bhilai-Durg Only)' : 'होम विजिट सेवा क्षेत्र पता (केवल रायपुर-भिलाई-दुर्ग)'}
+                    </span>
+                    
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-stone-500 uppercase tracking-wider block">
+                          {language === 'en' ? 'Service Metro City *' : 'सेवा क्षेत्र शहर *'}
+                        </label>
+                        <select
+                          required
+                          value={city}
+                          onChange={(e) => setCity(e.target.value as any)}
+                          className="w-full rounded-xl border border-stone-200 bg-white py-2.5 px-3 text-xs font-medium focus:border-emerald-800 focus:outline-hidden"
+                        >
+                          <option value="">-- {language === 'en' ? 'Choose Raipur Metro City' : 'रायपुर मेट्रो शहर चुनें'} --</option>
+                          <option value="Raipur">{language === 'en' ? 'Raipur (रायपुर)' : 'रायपुर (Raipur)'}</option>
+                          <option value="Bhilai">{language === 'en' ? 'Bhilai (भिलाई)' : 'भिलाई (Bhilai)'}</option>
+                          <option value="Durg">{language === 'en' ? 'Durg (दुर्ग)' : 'दुर्ग (Durg)'}</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-stone-500 uppercase tracking-wider block">
+                          {language === 'en' ? 'Pincode' : 'पिनकोड'}
+                        </label>
+                        <input
+                          type="text"
+                          maxLength={6}
+                          placeholder="e.g. 492001"
+                          value={pincode}
+                          onChange={(e) => setPincode(e.target.value.replace(/\D/g, ''))}
+                          className="w-full rounded-xl border border-stone-200 bg-white py-2.5 px-3 text-xs font-medium focus:border-emerald-800 focus:outline-hidden"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider block">
+                        {language === 'en' ? 'Complete Street Address (Home Visit Location) *' : 'पूरा आवासीय पता (होम विजिट स्थल) *'}
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        placeholder={language === 'en' ? "Flat No, Building Name, Street, Landmark..." : "मकान नंबर, बिल्डिंग का नाम, गली, मुख्य मील का पत्थर..."}
+                        className="w-full rounded-xl border border-stone-200 bg-white py-2.5 px-4 text-xs font-medium focus:border-emerald-800 focus:outline-hidden"
+                      />
+                    </div>
+
+                    {/* Area warning check */}
+                    <div className="flex items-start space-x-2 pt-1">
+                      <input
+                        type="checkbox"
+                        id="area-accept"
+                        required
+                        checked={areaAccepted}
+                        onChange={(e) => setAreaAccepted(e.target.checked)}
+                        className="h-4 w-4 text-emerald-805 border-stone-300 rounded-xs focus:ring-emerald-800 mt-0.5 cursor-pointer"
+                      />
+                      <label htmlFor="area-accept" className="text-[10px] text-stone-500 leading-tight select-none cursor-pointer">
+                        {language === 'en'
+                          ? 'I confirm that the therapist home visit address is located strictly within Raipur, Bhilai, or Durg metropolitan areas.'
+                          : 'मैं पुष्टि करता/करती हूँ कि थेरेपिस्ट विजिट का आवासीय पता केवल रायपुर, भिलाई या दुर्ग महानगरीय क्षेत्र के भीतर ही स्थित है।'}
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Consultation Context */}
+              {selectedService.category === 'consultation' && (
+                <div className="p-4 rounded-2xl bg-emerald-50/30 border border-emerald-200/40 space-y-4">
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-[#2E7D32] font-bold block">
+                    💬 {language === 'en' ? 'Clinical Assessment Parameters' : 'नैदानिक मूल्यांकन प्राथमिकताएं'}
+                  </span>
+
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider block">
+                        {language === 'en' ? "Baby's Age (Weeks)" : 'शिशु की आयु (सप्ताह में)'}
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={52}
+                        placeholder="e.g. 4"
+                        value={babyAgeWeeks}
+                        onChange={(e) => setBabyAgeWeeks(e.target.value)}
+                        className="w-full rounded-xl border border-stone-200 bg-white py-2.5 px-3 text-xs font-medium focus:border-emerald-800 focus:outline-hidden"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider block">
+                        {language === 'en' ? 'Primary Focus of consultation *' : 'परामर्श का मुख्य ध्यान क्षेत्र *'}
+                      </label>
+                      <select
+                        required
+                        value={focusArea}
+                        onChange={(e) => setFocusArea(e.target.value)}
+                        className="w-full rounded-xl border border-stone-200 bg-white py-2.5 px-3 text-xs font-medium focus:border-emerald-800 focus:outline-hidden"
+                      >
+                        <option value="">-- {language === 'en' ? 'Choose Core Area' : 'मुख्य समस्या चुनें'} --</option>
+                        {selectedService.id === 'lactation-consult' ? (
+                          <>
+                            <option value="breast-pain">{language === 'en' ? 'Latching Pain / Sore Nipples' : 'स्तनपान के समय दर्द / सोर निपल्स'}</option>
+                            <option value="low-supply">{language === 'en' ? 'Low Milk Supply Concerns' : 'दूध की कम आपूर्ति की चिंता'}</option>
+                            <option value="holding-postures">{language === 'en' ? 'Correct Holding Postures' : 'सही मुद्रा और पोजीशन प्रशिक्षण'}</option>
+                            <option value="pump-guideline">{language === 'en' ? 'Breast Pump Guidelines / Storing' : 'ब्रेस्ट पंप का उपयोग और दूध का भंडारण'}</option>
+                          </>
+                        ) : (
+                          <>
+                            <option value="baby-blues">{language === 'en' ? 'Postpartum Baby Blues / Mood swings' : 'प्रसवोत्तर उदासी (Baby Blues) / मूड में बदलाव'}</option>
+                            <option value="sleep-exhaustion">{language === 'en' ? 'Sleep Deprivation & Extreme Fatigue' : 'नींद की कमी और अत्यधिक थकान'}</option>
+                            <option value="anxiety-worry">{language === 'en' ? 'Anxiety & Baby Safety Hyper-vigilance' : 'शिशु सुरक्षा संबंधी चिंता व घबराहट'}</option>
+                            <option value="adjustment">{language === 'en' ? 'Adjusting to New Maternal Identity' : 'नए मातृत्व दायित्वों के समन्वय में सहायता'}</option>
+                          </>
+                        )}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-stone-500 uppercase tracking-wider block">

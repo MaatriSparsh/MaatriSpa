@@ -298,11 +298,47 @@ export default function AdminPortalModal({ onClose, onOpenBookingWizard }: Admin
                                   <FileText className="h-3.5 w-3.5 text-stone-400" />
                                   <span className="truncate">Email Alerts: {booking.userDetails?.email || booking.email}</span>
                                 </div>
-                                {booking.userDetails?.babyName && (
-                                  <div className="col-span-full bg-stone-50 border border-stone-100 rounded-lg p-2 mt-1 leading-snug">
-                                    <span>👶 Registered Infant: <strong>{booking.userDetails.babyName}</strong> ({booking.userDetails.babyAgeWeeks || 'Postpartum'} weeks old)</span>
-                                    {booking.userDetails.notes && (
-                                      <p className="italic text-stone-500 mt-1">" {booking.userDetails.notes} "</p>
+                                {(booking.userDetails?.babyName || booking.userDetails?.deliveryType || booking.userDetails?.address || booking.userDetails?.focusArea || booking.userDetails?.notes) && (
+                                  <div className="col-span-full bg-stone-50 border border-stone-150 rounded-xl p-3 mt-2 leading-relaxed space-y-1.5 min-w-[280px]">
+                                    {booking.userDetails?.babyName && (
+                                      <div className="text-stone-800">
+                                        👶 <span className="font-semibold text-stone-700">Registered Infant:</span> <strong>{booking.userDetails.babyName}</strong> {booking.userDetails.babyAgeWeeks ? `(${booking.userDetails.babyAgeWeeks} weeks old)` : ''}
+                                      </div>
+                                    )}
+
+                                    {booking.userDetails?.deliveryType && (
+                                      <div className="text-stone-800 flex flex-wrap gap-x-3 gap-y-1 text-xs">
+                                        <span className="bg-amber-100/60 text-amber-950 font-semibold px-2 py-0.5 rounded border border-amber-200">
+                                          🤰 {booking.userDetails.deliveryType === 'normal' ? 'Normal / Vaginal Delivery' : 'Cesarean / C-Section (LSCS)'}
+                                        </span>
+                                        {booking.userDetails.deliveryDate && (
+                                          <span className="text-stone-500 font-mono self-center">
+                                            📅 Date: {booking.userDetails.deliveryDate}
+                                          </span>
+                                        )}
+                                        {booking.userDetails.stitchCondition && (
+                                          <span className="text-[#a16207] self-center">
+                                            🧵 Stitches: {booking.userDetails.stitchCondition}
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
+
+                                    {booking.userDetails?.address && (
+                                      <div className="text-stone-700 bg-white border border-stone-200/65 p-2.5 rounded-lg mt-1 text-xs">
+                                        📍 <span className="font-semibold text-emerald-900">Home Visit Address (Raipur-Bhilai-Durg Area):</span>
+                                        <p className="font-semibold text-stone-900 mt-0.5">{booking.userDetails.address}, {booking.userDetails.city || 'Raipur'} {booking.userDetails.pincode ? `- ${booking.userDetails.pincode}` : ''}</p>
+                                      </div>
+                                    )}
+
+                                    {booking.userDetails?.focusArea && (
+                                      <div className="text-stone-800">
+                                        🎯 <span className="font-semibold text-stone-700">Consultation Focus:</span> <span className="bg-emerald-50 text-emerald-800 font-mono text-[10px] px-1.5 py-0.5 rounded border border-emerald-100">{booking.userDetails.focusArea}</span>
+                                      </div>
+                                    )}
+
+                                    {booking.userDetails?.notes && (
+                                      <p className="italic text-stone-500 border-t border-stone-100 pt-1.5 mt-1 text-[11px]">" {booking.userDetails.notes} "</p>
                                     )}
                                   </div>
                                 )}

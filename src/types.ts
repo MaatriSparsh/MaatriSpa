@@ -45,6 +45,13 @@ export interface BookingDetails {
   email: string;
   phone: string;
   notes?: string;
+  deliveryType?: 'normal' | 'lscs' | 'none';
+  deliveryDate?: string;
+  city?: 'Raipur' | 'Bhilai' | 'Durg' | '';
+  address?: string;
+  pincode?: string;
+  stitchCondition?: string;
+  focusArea?: string;
 }
 
 export interface Booking {

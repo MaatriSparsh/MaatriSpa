@@ -120,14 +120,41 @@ export default function MyBookingsModal({ onClose }: MyBookingsModalProps) {
                           <span>Appointment Hour: {booking.date} @ <strong>{booking.timeSlot}</strong></span>
                         </div>
 
-                        {/* Optional Baby Information info block */}
-                        {(booking.userDetails.babyName || booking.userDetails.notes) && (
-                          <div className="bg-stone-50/50 rounded-xl p-2.5 text-[11px] border border-stone-100/50 mt-2 space-y-1 text-stone-600 leading-relaxed">
+                        {/* Optional Baby Information info block & Package Criteria */}
+                        {(booking.userDetails?.babyName || booking.userDetails?.deliveryType || booking.userDetails?.address || booking.userDetails?.focusArea || booking.userDetails?.notes) && (
+                          <div className="bg-stone-50/80 rounded-xl p-3 text-[11px] border border-stone-150 mt-2.5 space-y-2 text-stone-600 leading-relaxed max-w-sm">
                             {booking.userDetails.babyName && (
-                              <div>👶 Infant Registered: <strong>{booking.userDetails.babyName}</strong> ({booking.userDetails.babyAgeWeeks || 'Postpartum'} weeks old)</div>
+                              <div>👶 <span className="font-semibold text-stone-700">Registered Infant:</span> <strong>{booking.userDetails.babyName}</strong> {booking.userDetails.babyAgeWeeks ? `(${booking.userDetails.babyAgeWeeks} weeks old)` : ''}</div>
                             )}
+                            
+                            {booking.userDetails.deliveryType && (
+                              <div className="flex flex-wrap gap-1.5 text-[10.5px]">
+                                <span className="bg-amber-100/60 text-amber-955 font-semibold px-2 py-0.5 rounded border border-amber-250/50">
+                                  🤰 {booking.userDetails.deliveryType === 'normal' ? 'Normal Delivery Care' : 'Cesarean / LSCS Care'}
+                                </span>
+                                {booking.userDetails.deliveryDate && (
+                                  <span className="text-stone-500 font-mono self-center">
+                                    📅 Date: {booking.userDetails.deliveryDate}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+
+                            {booking.userDetails.address && (
+                              <div className="text-stone-700 bg-white border border-stone-150 p-2 rounded-lg mt-1 text-[10.5px]">
+                                <span className="font-semibold text-emerald-900">📍 Home Visit Address:</span>
+                                <p className="font-semibold text-stone-900 mt-0.5">{booking.userDetails.address}, {booking.userDetails.city || 'Raipur'} {booking.userDetails.pincode ? `- ${booking.userDetails.pincode}` : ''}</p>
+                              </div>
+                            )}
+
+                            {booking.userDetails.focusArea && (
+                              <div>
+                                🎯 <span className="font-semibold text-stone-700">Consultation Focus:</span> <span className="bg-emerald-50 text-emerald-800 font-mono text-[9px] px-1.5 py-0.5 rounded border border-emerald-100">{booking.userDetails.focusArea}</span>
+                              </div>
+                            )}
+
                             {booking.userDetails.notes && (
-                              <div className="italic text-stone-550 line-clamp-2">" {booking.userDetails.notes} "</div>
+                              <div className="italic text-stone-500 border-t border-stone-105 pt-1.5 mt-1 font-sans">" {booking.userDetails.notes} "</div>
                             )}
                           </div>
                         )}
@@ -137,7 +164,7 @@ export default function MyBookingsModal({ onClose }: MyBookingsModalProps) {
                       <div className="flex sm:flex-col justify-between items-end shrink-0 pt-1">
                         <div className="text-right">
                           <span className="block text-[9px] text-stone-400 font-mono uppercase tracking-wider leading-none">Consultation Fee</span>
-                          <span className="font-serif font-black text-sm sm:text-base text-emerald-850">${booking.service.price}</span>
+                          <span className="font-serif font-black text-sm sm:text-base text-emerald-850">₹{(booking.priceInr || booking.service.priceInr || booking.finalPriceInr || 1499).toLocaleString('en-IN')}</span>
                         </div>
 
                         {!isCancelled && (
