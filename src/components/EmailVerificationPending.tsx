@@ -5,11 +5,13 @@ import { Mail, RefreshCw, Send, LogOut, CheckCircle, AlertCircle, HelpCircle } f
 import { motion } from 'motion/react';
 
 export default function EmailVerificationPending() {
-  const { user, resendSecondaryVerification, checkEmailVerificationStatus, logOut, error } = useFirebase();
+  const { user, resendSecondaryVerification, checkEmailVerificationStatus, verifyEmailOtp, logOut, error } = useFirebase();
   const { language } = useLanguage();
   
   const [resendCooldown, setResendCooldown] = useState<number>(0);
   const [checking, setChecking] = useState<boolean>(false);
+  const [verifyingOtp, setVerifyingOtp] = useState<boolean>(false);
+  const [otpInput, setOtpInput] = useState<string>('');
   const [localFeedback, setLocalFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Manage cooldown countdown timer
@@ -30,7 +32,7 @@ export default function EmailVerificationPending() {
       setLocalFeedback({
         type: 'success',
         message: language === 'en'
-          ? "A fresh verification link has been delivered to your maternal inbox."
+          ? "A fresh verification code is sent to your maternal inbox."
           : "आपकी सुरक्षा हेतु एक नया सत्यापन कोड आपके ईमेल पते पर भेज दिया गया है।"
       });
     } catch (err: any) {
@@ -57,8 +59,8 @@ export default function EmailVerificationPending() {
         setLocalFeedback({
           type: 'error',
           message: language === 'en'
-            ? "We couldn't confirm the verification yet. Please click the link sent to your email and try again."
-            : "हम अभी सत्यापन की पुष्टि नहीं कर पाए। कृपया अपने इनबॉक्स में प्राप्त क्रेडेंशियल लिंक पर क्लिक करें और पुनः जांचें।"
+            ? "We couldn't confirm the email verification link status yet. Kindly check your inbox."
+            : "हम अभी सत्यापन लिंक की पुष्टि नहीं कर पाए। कृपया अपने इनबॉक्स में प्राप्त क्रेडेंशियल लिंक पर क्लिक करें और पुनः जांचें।"
         });
       }
     } catch (err: any) {
@@ -68,6 +70,30 @@ export default function EmailVerificationPending() {
       });
     } finally {
       setChecking(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (otpInput.length !== 6) return;
+    setVerifyingOtp(true);
+    setLocalFeedback(null);
+    try {
+      const isOk = await verifyEmailOtp(otpInput);
+      if (isOk) {
+        setLocalFeedback({
+          type: 'success',
+          message: language === 'en'
+            ? "PIN Code verified successfully! Redirecting you to MaatriSparsh Postpartum Care Portal..."
+            : "पिन कोड सफलतापूर्वक सत्यापित हुआ! मातृत्व पोर्टल पर पुनः निर्देशित किया जा रहा है..."
+        });
+      }
+    } catch (err: any) {
+      setLocalFeedback({
+        type: 'error',
+        message: err?.message || (language === 'en' ? "Invalid verification code." : "अमान्य सत्यापन कोड दर्ज किया गया।")
+      });
+    } finally {
+      setVerifyingOtp(false);
     }
   };
 
@@ -157,6 +183,54 @@ export default function EmailVerificationPending() {
                 : (language === 'en' ? 'Resend Verification Email' : 'सत्यापन ईमेल पुनः भेजें')}
             </span>
           </button>
+        </div>
+
+        {/* OTP Input Section */}
+        <div className="border-t border-stone-100 pt-5 space-y-3" id="fallback-otp-verification-section">
+          <label className="block text-xs font-semibold text-stone-700 tracking-wide uppercase">
+            {language === 'en' ? 'Or Enter 6-Digit PIN Code:' : 'या 6-अंकीय पिन कोड दर्ज करें:'}
+          </label>
+          <div className="flex space-x-2">
+            <input
+              type="text"
+              maxLength={6}
+              placeholder="e.g. 123456"
+              value={otpInput}
+              onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, ''))}
+              className="flex-1 bg-stone-50 border border-stone-200 focus:border-stone-400 focus:ring-0 rounded-xl px-4 py-2.5 text-center font-mono text-lg tracking-widest text-stone-800 placeholder:text-stone-300 placeholder:text-sm"
+              id="verification-otp-input-field"
+            />
+            <button
+              onClick={handleVerifyOtp}
+              disabled={verifyingOtp || otpInput.length !== 6}
+              className="bg-stone-900 hover:bg-stone-800 disabled:opacity-50 text-white font-semibold text-xs px-5 py-2.5 rounded-xl transition duration-150 cursor-pointer flex items-center space-x-1.5"
+            >
+              {verifyingOtp ? (
+                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <CheckCircle className="h-3.5 w-3.5" />
+              )}
+              <span>{language === 'en' ? 'Verify Code' : 'पिन सत्यापित करें'}</span>
+            </button>
+          </div>
+          <p className="text-[11px] text-stone-400 leading-normal">
+            {language === 'en'
+              ? 'Enter the 6-digit maternal security PIN received in your email inbox to instant-verify.'
+              : 'त्वरित सत्यापन के लिए अपने ईमेल इनबॉक्स में प्राप्त 6-अंकीय पिन दर्ज करें।'}
+          </p>
+        </div>
+
+        {/* Testing Sandbox Support Notice */}
+        <div className="rounded-xl bg-stone-50 border border-stone-200/60 p-3.5 text-stone-600 space-y-1.5 text-xs">
+          <p className="font-semibold text-stone-800 flex items-center space-x-1">
+            <HelpCircle className="h-4 w-4 text-emerald-600 shrink-0" />
+            <span>{language === 'en' ? 'Sandbox & Testing Hints' : 'सैंडबॉक्स और परीक्षण संकेत'}</span>
+          </p>
+          <p className="leading-relaxed text-stone-500">
+            {language === 'en'
+              ? "If you do not see the email immediately, please inspect your spam/junk folder. If SMTP keys are unconfigured, your 6-digit security PIN is logged in the F12 Browser Developer Console and under 'Live Activity Logs' inside the Admin Portal."
+              : "यदि ईमेल प्राप्त नहीं होता है, तो स्पैम/जंक फ़ोल्डर देखें। यदि SMTP सेट नहीं है, तो आपका 6-अंकीय सुरक्षा पिन F12 कंसोल और एडमिन पोर्टल 'Live Activity Logs' में मिलेगा।"}
+          </p>
         </div>
 
         {/* Exit Gate */}

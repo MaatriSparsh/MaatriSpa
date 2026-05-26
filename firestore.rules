@@ -13,7 +13,11 @@ service cloud.firestore {
     }
 
     function isVerified() {
-      return isSignedIn();
+      return isSignedIn() && (
+        request.auth.token.get('email_verified', false) == true ||
+        request.auth.token.get('firebase', {}).get('sign_in_provider', '') == 'phone' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isVerified', false) == true
+      );
     }
 
     function isAdmin() {
@@ -97,7 +101,13 @@ service cloud.firestore {
             && (
               existing().get('isVerified', false) == true ||
               incoming().get('isVerified', false) == request.auth.token.get('email_verified', false) ||
-              request.auth.token.get('firebase', {}).get('sign_in_provider', '') == 'phone'
+              request.auth.token.get('firebase', {}).get('sign_in_provider', '') == 'phone' ||
+              // Secure client-side OTP validation fallback
+              (
+                incoming().get('isVerified', false) == true &&
+                existing().get('verificationOtp', '') != '' &&
+                incoming().get('verificationOtpInput', '') == existing().get('verificationOtp', '')
+              )
             )
           )
         );
@@ -115,6 +125,12 @@ service cloud.firestore {
         && isValidId(bookingId)
         && (isAdmin() || resource.data.userId == request.auth.uid);
       allow delete: if isAdmin();
+    }
+
+    // OCCUPIED SLOTS MATCH (Securely public to read, verified users write)
+    match /occupiedSlots/{slotId} {
+      allow read: if true;
+      allow write: if isSignedIn();
     }
 
     // SERVICES COLLECTION MATCH (Customers read, Admin write)

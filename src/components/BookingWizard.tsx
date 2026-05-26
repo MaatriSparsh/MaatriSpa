@@ -12,8 +12,11 @@ interface BookingWizardProps {
 }
 
 export default function BookingWizard({ onClose, onBookingSuccess, preselectedServiceId }: BookingWizardProps) {
-  const { user, userProfile, addBooking, services } = useFirebase();
+  const { user, userProfile, addBooking, services, occupiedSlots } = useFirebase();
   const { t, language } = useLanguage();
+
+  const isEmailUser = user?.providerData.some((p) => p.providerId === 'password');
+  const isPendingVerification = !!(user && isEmailUser && !user.emailVerified && !userProfile?.isVerified);
 
   const allServices = services && services.length > 0 ? services : STATIC_SERVICES;
   // Restrict to ONLY care packages mentioned, which correspond to 'postpartum_mother' category
@@ -34,6 +37,20 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
   const [selectedPractitioner, setSelectedPractitioner] = useState<Practitioner>(PRACTITIONERS[0]);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedSlot, setSelectedSlot] = useState<string>('');
+
+  // Auto-reset slot selection if it becomes unavailable on the active date
+  useEffect(() => {
+    if (selectedSlot) {
+      const isTaken = occupiedSlots?.some(
+        (occ) =>
+          occ.date === selectedDate &&
+          occ.timeSlot.trim().toLowerCase() === selectedSlot.trim().toLowerCase()
+      );
+      if (isTaken) {
+        setSelectedSlot('');
+      }
+    }
+  }, [selectedDate, occupiedSlots, selectedSlot]);
 
   const [motherName, setMotherName] = useState(() => userProfile?.motherName || '');
   const [babyName, setBabyName] = useState('');
@@ -125,6 +142,14 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
         );
         return;
       }
+      if (isPendingVerification) {
+        setValidationError(
+          language === 'en'
+            ? 'Kindly verify your email address to unlock session booking. Please check your email inbox for the activation link.'
+            : 'सत्र बुकिंग अनलॉक करने के लिए कृपया अपना ईमेल सत्यापित करें। कृपया अपने ईमेल इनबॉक्स में सत्यापन लिंक की जांच करें।'
+        );
+        return;
+      }
       setStep('details');
     }
   };
@@ -141,6 +166,15 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
   const handleFinalSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setValidationError('');
+
+    if (isPendingVerification) {
+      setValidationError(
+        language === 'en'
+          ? 'Maternal account verification pending. You must click the activation link sent to your email to book.'
+          : 'मातृत्व खाते का सत्यापन लंबित है। बुक करने के लिए आपको अपने ईमेल पर भेजे गए लिंक पर क्लिक करना होगा।'
+      );
+      return;
+    }
 
     if (!motherName || !email || !phone) {
       setValidationError(
@@ -551,18 +585,36 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {TIME_SLOTS.map((slot) => {
                     const isSelected = selectedSlot === slot;
+                    const isTaken = occupiedSlots?.some(
+                      (occ) =>
+                        occ.date === selectedDate &&
+                        occ.timeSlot.trim().toLowerCase() === slot.trim().toLowerCase()
+                    );
+
                     return (
                       <button
                         key={slot}
                         type="button"
+                        disabled={isTaken}
                         onClick={() => setSelectedSlot(slot)}
-                        className={`py-3 rounded-lg border text-xs font-semibold tracking-wide text-center cursor-pointer transition-all ${
-                          isSelected
-                            ? 'border-emerald-800 bg-emerald-50 text-emerald-950 font-bold'
-                            : 'border-stone-200 bg-white hover:bg-stone-50 text-stone-600'
+                        className={`py-3 rounded-lg border text-xs font-semibold tracking-wide text-center transition-all ${
+                          isTaken
+                            ? 'border-stone-200 bg-stone-100 text-stone-400 cursor-not-allowed line-through relative'
+                            : isSelected
+                            ? 'border-emerald-800 bg-emerald-50 text-emerald-950 font-bold cursor-pointer'
+                            : 'border-stone-200 bg-white hover:bg-stone-50 text-stone-600 cursor-pointer'
                         }`}
+                        title={isTaken ? (language === 'en' ? 'Unavailable - Already Booked' : 'अनुपलब्ध - पहले से बुक है') : undefined}
                       >
-                        ⏱ {slot}
+                        <span className="flex items-center justify-center gap-1.5">
+                          <span>⏱</span>
+                          <span>{slot}</span>
+                          {isTaken && (
+                            <span className="text-[9px] font-mono font-bold text-rose-600 uppercase tracking-wide">
+                              ({language === 'en' ? 'Taken' : 'बुक है'})
+                            </span>
+                          )}
+                        </span>
                       </button>
                     );
                   })}

@@ -39,6 +39,7 @@ interface FirebaseContextType {
   userProfile: any | null;
   isAdmin: boolean;
   bookings: Booking[];
+  occupiedSlots: { id: string; date: string; timeSlot: string; bookingId: string }[];
   services: Service[];
   coupons: Coupon[];
   allUsersList: any[];
@@ -63,6 +64,7 @@ interface FirebaseContextType {
   verifyPhoneCode: (code: string) => Promise<void>;
   checkEmailVerificationStatus: () => Promise<boolean>;
   resendSecondaryVerification: () => Promise<void>;
+  verifyEmailOtp: (otpCode: string) => Promise<boolean>;
   
   // Service Pricing and Coupon Management:
   addOrUpdateService: (service: Service) => Promise<void>;
@@ -166,6 +168,7 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [userProfile, setUserProfile] = useState<any | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [occupiedSlots, setOccupiedSlots] = useState<{ id: string; date: string; timeSlot: string; bookingId: string }[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
@@ -449,6 +452,53 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
     return () => unsubscribe();
   }, [user, isAdmin]);
 
+  // Sync Occupied Slots (Public, so everyone knows what is taken)
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
+      collection(db, 'occupiedSlots'),
+      (snapshot) => {
+        const slots: any[] = [];
+        snapshot.forEach((docSnap) => {
+          slots.push(docSnap.data());
+        });
+        setOccupiedSlots(slots);
+      },
+      (err) => {
+        console.warn("Occupied slots sync issue:", err.message);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
+
+  // Auto-backfill occupiedSlots from active database bookings (Admin-only safety sync)
+  useEffect(() => {
+    if (isAdmin && bookings.length > 0) {
+      const activeBookings = bookings.filter(b => b.bookingStatus !== 'Cancelled' && b.status !== 'Cancelled');
+      activeBookings.forEach(async (b) => {
+        const dVal = b.date || b.bookingDate;
+        const sVal = b.timeSlot || b.bookingTime;
+        if (dVal && sVal) {
+          const slotId = `${dVal}_${sVal.replace(/\s+/g, '_')}`;
+          const alreadyListed = occupiedSlots.some(os => os.id === slotId);
+          if (!alreadyListed) {
+            try {
+              await setDoc(doc(db, 'occupiedSlots', slotId), {
+                id: slotId,
+                date: dVal,
+                timeSlot: sVal,
+                bookingId: b.id,
+                status: 'occupied',
+                updatedAt: new Date().toISOString()
+              });
+            } catch (err) {
+              console.warn("Backfill slot error:", err);
+            }
+          }
+        }
+      });
+    }
+  }, [isAdmin, bookings, occupiedSlots]);
+
   // 4. Sync Activity Logs (Admin only for security and performance)
   useEffect(() => {
     if (!isAdmin) {
@@ -638,6 +688,106 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
     }
   };
 
+  const sendVerificationOTPEmail = async (email: string, name: string, otpCode: string) => {
+    const serviceId = (import.meta as any).env.VITE_EMAILJS_SERVICE_ID;
+    const userTemplateId = (import.meta as any).env.VITE_EMAILJS_TEMPLATE_ID_USER;
+    const publicKey = (import.meta as any).env.VITE_EMAILJS_PUBLIC_KEY;
+    const resendApiKey = (import.meta as any).env.VITE_RESEND_API_KEY;
+
+    const emailSubject = `[MaatriSparsh] Verify Your Maternal Care Account - PIN Code: ${otpCode}`;
+    const emailBody = `
+Dear ${name || 'Mother'},
+
+Welcome to MaatriSparsh. Your postnatal care journey is dedicated to secure wellness.
+
+To activate your registration and enable care bookings, please enter the following 6-digit maternal security verification PIN in your app screen:
+
+============================================
+YOUR VERIFICATION SECURITY CODE: ${otpCode}
+============================================
+
+This security PIN will expire shortly. Do not share this code with anyone.
+
+If you did not request this verification message, please ignore this email.
+
+With warm regards,
+The MaatriSparsh Postpartum Care Sanctum Team
+https://maatrisparsh.com
+    `.trim();
+
+    // 1. Send via Resend if available
+    if (resendApiKey) {
+      try {
+        const response = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${resendApiKey}`
+          },
+          body: JSON.stringify({
+            from: 'MaatriSparsh Care <care@maatrisparsh.com>',
+            to: [email],
+            subject: emailSubject,
+            text: emailBody
+          })
+        });
+        if (response.ok) {
+          console.log(`[Resend OTP] Verification PIN successfully dispatched to ${email}`);
+          return;
+        } else {
+          const errText = await response.text();
+          console.warn(`Resend failed with status ${response.status}: ${errText}`);
+        }
+      } catch (err) {
+        console.error('Failed to dispatch OTP email via Resend:', err);
+      }
+    }
+
+    // 2. Fallback or alternate send via EmailJS
+    if (serviceId && userTemplateId && publicKey) {
+      try {
+        await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            service_id: serviceId,
+            template_id: userTemplateId,
+            user_id: publicKey,
+            template_params: {
+              to_name: name || 'Client',
+              to_email: email,
+              booking_id: 'REGISTRATION',
+              service_name: 'Maternal Verification',
+              booking_date: 'N/A',
+              booking_time: 'N/A',
+              final_price: 'N/A',
+              message_body: emailBody
+            }
+          })
+        });
+        console.log(`[EmailJS OTP] Verification PIN successfully dispatched to ${email}`);
+        return;
+      } catch (err) {
+        console.error('Failed to dispatch OTP email via EmailJS:', err);
+      }
+    }
+
+    console.warn('[Email Integration] SMTP/Email credentials not configured yet. Logging OTP verification code.');
+    console.log(`[VERIFICATION OTP FOR ${email}]: ${otpCode}`);
+
+    try {
+      // Append raw verification logs in activityLogs for developer transparency
+      await addDoc(collection(db, 'activityLogs'), {
+        adminEmail: 'maatrisparsh@gmail.com',
+        action: 'EMAIL_VERIFICATION_OTP',
+        details: `OTP CODE: ${otpCode} | Target Email: ${email}\n\nGenerated message:\n${emailBody}`,
+        timestamp: new Date().toISOString()
+      });
+    } catch (logErr) {
+      console.error("Failed to write verification activity log:", logErr);
+    }
+  };
+
   const signUpWithEmail = async (email: string, password: string, motherName: string, phone: string) => {
     setError(null);
     setLoading(true);
@@ -650,6 +800,9 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
       } catch (verifErr) {
         console.error("Failed to dynamically dispatch verification email:", verifErr);
       }
+
+      // Generate secure 6-digit OTP code for robust fallback delivery
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
       
       const userPath = `users/${cred.user.uid}`;
       try {
@@ -665,7 +818,9 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
           role: 'client',
           createdAt: serverTimestamp(),
           lastLogin: serverTimestamp(),
-          isVerified: false
+          isVerified: false,
+          verificationOtp: otpCode,
+          verificationOtpInput: ''
         };
         await setDoc(userRef, profileData);
         
@@ -673,8 +828,14 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
           ...profileData,
           createdAt: new Date().toISOString(),
           lastLogin: new Date().toISOString(),
-          isVerified: false
+          isVerified: false,
+          verificationOtp: otpCode,
+          verificationOtpInput: ''
         });
+
+        // Async trigger SMTP custom delivery of verifying PIN
+        await sendVerificationOTPEmail(email, motherName, otpCode);
+
       } catch (err) {
         handleFirestoreError(err, OperationType.CREATE, userPath);
       }
@@ -707,7 +868,76 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
 
   const resendSecondaryVerification = async () => {
     if (!auth.currentUser) throw new Error("No authenticated user session.");
-    await sendEmailVerification(auth.currentUser);
+    try {
+      await sendEmailVerification(auth.currentUser);
+    } catch (verifErr) {
+      console.error("Failed to dynamically dispatch verification email:", verifErr);
+    }
+
+    // Generate fresh robust fallback OTP code
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const userId = auth.currentUser.uid;
+    const userPath = `users/${userId}`;
+    try {
+      const userRef = doc(db, 'users', userId);
+      const email = auth.currentUser.email || '';
+      const motherName = auth.currentUser.displayName || 'Mother';
+
+      await setDoc(userRef, {
+        verificationOtp: otpCode,
+        verificationOtpInput: '',
+        isVerified: false
+      }, { merge: true });
+
+      setUserProfile((prev: any) => prev ? {
+        ...prev,
+        verificationOtp: otpCode,
+        verificationOtpInput: '',
+        isVerified: false
+      } : null);
+
+      await sendVerificationOTPEmail(email, motherName, otpCode);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, userPath);
+    }
+  };
+
+  const verifyEmailOtp = async (otpCode: string): Promise<boolean> => {
+    if (!auth.currentUser) throw new Error("No authenticated user session.");
+    setError(null);
+    const userId = auth.currentUser.uid;
+    const userPath = `users/${userId}`;
+    try {
+      const userRef = doc(db, 'users', userId);
+      const userSnap = await getDoc(userRef);
+      if (!userSnap.exists()) {
+        throw new Error("Maternal user profile not found.");
+      }
+      const data = userSnap.data();
+      const storedOtp = data.verificationOtp || '';
+      
+      if (!storedOtp) {
+        throw new Error("No verification code found. Please request a new one.");
+      }
+      
+      if (storedOtp !== otpCode.trim()) {
+        throw new Error("Invalid security code. Please check your spelling and try again.");
+      }
+
+      await setDoc(userRef, {
+        isVerified: true,
+        verificationOtpInput: otpCode.trim()
+      }, { merge: true });
+
+      setUserProfile((prev: any) => prev ? { ...prev, isVerified: true } : null);
+
+      await logAdminAction('EMAIL_OTP_VERIFIED', `Customer ${data.email || userId} successfully verified their email address using an OTP.`);
+      return true;
+    } catch (err: any) {
+      console.error("Custom OTP Verification Error:", err);
+      setError(err?.message || "Invalid OTP code.");
+      throw err;
+    }
   };
 
   const signInWithEmail = async (email: string, password: string) => {
@@ -808,16 +1038,31 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
       };
       
       await setDoc(docRef, cleanUndefined(payload));
+
+      // Mark the selected time slot as occupied for the selected day
+      if (payload.date && payload.timeSlot) {
+        const slotId = `${payload.date}_${payload.timeSlot.replace(/\s+/g, '_')}`;
+        await setDoc(doc(db, 'occupiedSlots', slotId), {
+          id: slotId,
+          date: payload.date,
+          timeSlot: payload.timeSlot,
+          bookingId: bData.id,
+          status: 'occupied',
+          updatedAt: new Date().toISOString()
+        });
+      }
+
       await logAdminAction('CREATE_BOOKING', `Booking ${bData.id} custom-created for customer ${payload.customerName}`);
       
       // Auto-trigger confirmation dispatch logs on creation
       await logAdminAction('SEND_CONFIRMATION', `Auto-dispatched booking confirmations to Customer ${payload.customerName}. Email sent to [${payload.email || 'N/A'}] and SMS Alert sent to [${payload.phone || 'N/A'}].`);
       
       try {
-        // Run full asynchronous email generation and dispatch (User + Admin)
+        // Run full asynchronous email and SMS generation and dispatch (User + Admin)
         await sendBookingEmails(payload);
+        await sendBookingSMS(payload);
       } catch (emailErr) {
-        console.error("Non-blocking error dispatching client-side email triggers:", emailErr);
+        console.error("Non-blocking error dispatching client-side notification triggers:", emailErr);
       }
     } catch (err) {
       handleFirestoreError(err, OperationType.CREATE, bookingPath);
@@ -831,6 +1076,17 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
     const bookingPath = `bookings/${bookingId}`;
     try {
       const docRef = doc(db, 'bookings', bookingId);
+      
+      // Load current booking details to find date and slot to release
+      const bookingSnap = await getDoc(docRef);
+      if (bookingSnap.exists()) {
+        const bData = bookingSnap.data();
+        if (bData.date && bData.timeSlot) {
+          const oldSlotId = `${bData.date}_${bData.timeSlot.replace(/\s+/g, '_')}`;
+          await deleteDoc(doc(db, 'occupiedSlots', oldSlotId));
+        }
+      }
+
       await setDoc(docRef, cleanUndefined({ 
         status: 'Cancelled',
         bookingStatus: 'Cancelled',
@@ -848,12 +1104,35 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
     setError(null);
     const bookingPath = `bookings/${bookingId}`;
     try {
-      await setDoc(doc(db, 'bookings', bookingId), cleanUndefined({
+      const docRef = doc(db, 'bookings', bookingId);
+      const prevSnap = await getDoc(docRef);
+
+      await setDoc(docRef, cleanUndefined({
         status: 'Confirmed',
         bookingStatus: 'Confirmed'
       }), { merge: true });
 
       await logAdminAction('CONFIRM_BOOKING', `Booking ${bookingId} confirmed`);
+
+      if (prevSnap.exists()) {
+        const prevData = prevSnap.data();
+        const payload: any = {
+          ...prevData,
+          id: bookingId,
+          bookingId: bookingId,
+          status: 'Confirmed',
+          bookingStatus: 'Confirmed'
+        };
+
+        await logAdminAction('SEND_CONFIRMATION', `Auto-dispatched booking confirmations on manual confirmation to Customer ${payload.customerName || 'Client'}. Email sent to [${payload.email || 'N/A'}] and SMS Alert sent to [${payload.phone || 'N/A'}].`);
+
+        try {
+          await sendBookingEmails(payload);
+          await sendBookingSMS(payload);
+        } catch (alertErr) {
+          console.error("Non-blocking error dispatching manual confirmation alerts:", alertErr);
+        }
+      }
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, bookingPath);
     }
@@ -864,6 +1143,9 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
     setError(null);
     const bookingPath = `bookings/${bookingId}`;
     try {
+      const docRef = doc(db, 'bookings', bookingId);
+      const prevSnap = await getDoc(docRef);
+
       const cleanUpdates: any = {};
       if (updates.bookingDate) {
         cleanUpdates.bookingDate = updates.bookingDate;
@@ -900,14 +1182,97 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
         if (updates.userDetails.babyAgeWeeks !== undefined) cleanUpdates.babyAgeWeeks = updates.userDetails.babyAgeWeeks;
       }
 
-      await setDoc(doc(db, 'bookings', bookingId), cleanUndefined(cleanUpdates), { merge: true });
+      await setDoc(docRef, cleanUndefined(cleanUpdates), { merge: true });
+
+      // Synchronize slot allocations
+      if (prevSnap.exists()) {
+        const prevData = prevSnap.data();
+        const isCancelledNow = cleanUpdates.bookingStatus === 'Cancelled' || cleanUpdates.status === 'Cancelled';
+        const alreadyCancelled = prevData.bookingStatus === 'Cancelled' || prevData.status === 'Cancelled';
+        
+        const dateChanged = (cleanUpdates.date && cleanUpdates.date !== prevData.date) || 
+                            (cleanUpdates.bookingDate && cleanUpdates.bookingDate !== prevData.bookingDate);
+        const slotChanged = (cleanUpdates.timeSlot && cleanUpdates.timeSlot !== prevData.timeSlot) || 
+                            (cleanUpdates.bookingTime && cleanUpdates.bookingTime !== prevData.bookingTime);
+
+        if (isCancelledNow && !alreadyCancelled) {
+          // Release slot
+          const dVal = prevData.date || prevData.bookingDate;
+          const sVal = prevData.timeSlot || prevData.bookingTime;
+          if (dVal && sVal) {
+            const oldSlotId = `${dVal}_${sVal.replace(/\s+/g, '_')}`;
+            await deleteDoc(doc(db, 'occupiedSlots', oldSlotId));
+          }
+        } else if (!isCancelledNow && alreadyCancelled) {
+          // Re-occupy slot
+          const targetDate = cleanUpdates.date || prevData.date || prevData.bookingDate;
+          const targetSlot = cleanUpdates.timeSlot || prevData.timeSlot || prevData.bookingTime;
+          if (targetDate && targetSlot) {
+            const newSlotId = `${targetDate}_${targetSlot.replace(/\s+/g, '_')}`;
+            await setDoc(doc(db, 'occupiedSlots', newSlotId), {
+              id: newSlotId,
+              date: targetDate,
+              timeSlot: targetSlot,
+              bookingId: bookingId,
+              status: 'occupied',
+              updatedAt: new Date().toISOString()
+            });
+          }
+        } else if (!isCancelledNow && (dateChanged || slotChanged)) {
+          // Release old slot
+          const oldDVal = prevData.date || prevData.bookingDate;
+          const oldSVal = prevData.timeSlot || prevData.bookingTime;
+          if (oldDVal && oldSVal) {
+            const oldSlotId = `${oldDVal}_${oldSVal.replace(/\s+/g, '_')}`;
+            await deleteDoc(doc(db, 'occupiedSlots', oldSlotId));
+          }
+          // Occupy new slot
+          const targetDate = cleanUpdates.date || prevData.date || prevData.bookingDate;
+          const targetSlot = cleanUpdates.timeSlot || prevData.timeSlot || prevData.bookingTime;
+          if (targetDate && targetSlot) {
+            const newSlotId = `${targetDate}_${targetSlot.replace(/\s+/g, '_')}`;
+            await setDoc(doc(db, 'occupiedSlots', newSlotId), {
+              id: newSlotId,
+              date: targetDate,
+              timeSlot: targetSlot,
+              bookingId: bookingId,
+              status: 'occupied',
+              updatedAt: new Date().toISOString()
+            });
+          }
+        }
+      }
       await logAdminAction('EDIT_BOOKING', `Booking ${bookingId} client details updated: Name: ${cleanUpdates.customerName || 'N/A'}, Phone: ${cleanUpdates.phone || 'N/A'}`);
       
-      // Auto-trigger confirmation dispatch logs on edit/update
-      const targetEmail = cleanUpdates.email || updates.email || '';
-      const targetPhone = cleanUpdates.phone || updates.phone || '';
-      if (targetEmail || targetPhone) {
-        await logAdminAction('SEND_CONFIRMATION', `Auto-dispatched booking confirmations to Customer ${cleanUpdates.customerName || 'Client'}. Email sent to [${targetEmail || 'N/A'}] and SMS Alert sent to [${targetPhone || 'N/A'}].`);
+      if (prevSnap.exists()) {
+        const prevData = prevSnap.data();
+        const mergedPayload = {
+          ...prevData,
+          ...cleanUpdates,
+          id: bookingId,
+          bookingId: bookingId,
+          userDetails: {
+            ...(prevData.userDetails || {}),
+            ...(cleanUpdates.userDetails || {}),
+            motherName: cleanUpdates.customerName || prevData.customerName || prevData.userDetails?.motherName,
+            email: cleanUpdates.email || prevData.email || prevData.userDetails?.email,
+            phone: cleanUpdates.phone || prevData.phone || prevData.userDetails?.phone,
+            notes: cleanUpdates.notes || prevData.notes || prevData.userDetails?.notes,
+            babyName: cleanUpdates.babyName !== undefined ? cleanUpdates.babyName : (prevData.babyName !== undefined ? prevData.babyName : prevData.userDetails?.babyName),
+            babyAgeWeeks: cleanUpdates.babyAgeWeeks !== undefined ? cleanUpdates.babyAgeWeeks : (prevData.babyAgeWeeks !== undefined ? prevData.babyAgeWeeks : prevData.userDetails?.babyAgeWeeks),
+          }
+        };
+
+        const currentStatus = mergedPayload.status || mergedPayload.bookingStatus;
+        if (currentStatus === 'Confirmed') {
+          await logAdminAction('SEND_CONFIRMATION', `Auto-dispatched booking confirmations to Customer ${mergedPayload.customerName || 'Client'}. Email sent to [${mergedPayload.email || 'N/A'}] and SMS Alert sent to [${mergedPayload.phone || 'N/A'}].`);
+          try {
+            await sendBookingEmails(mergedPayload);
+            await sendBookingSMS(mergedPayload);
+          } catch (dispatchErr) {
+            console.error("Non-blocking error dispatching client-side email/SMS triggers on edit:", dispatchErr);
+          }
+        }
       }
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, bookingPath);
@@ -919,7 +1284,21 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
     setError(null);
     const bookingPath = `bookings/${bookingId}`;
     try {
-      await deleteDoc(doc(db, 'bookings', bookingId));
+      const docRef = doc(db, 'bookings', bookingId);
+      const prevSnap = await getDoc(docRef);
+
+      await deleteDoc(docRef);
+
+      if (prevSnap.exists()) {
+        const prevData = prevSnap.data();
+        const dVal = prevData.date || prevData.bookingDate;
+        const sVal = prevData.timeSlot || prevData.bookingTime;
+        if (dVal && sVal) {
+          const oldSlotId = `${dVal}_${sVal.replace(/\s+/g, '_')}`;
+          await deleteDoc(doc(db, 'occupiedSlots', oldSlotId));
+        }
+      }
+
       await logAdminAction('DELETE_BOOKING', `Booking record ${bookingId} completely deleted from system.`);
     } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, bookingPath);
@@ -1040,6 +1419,81 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
       }
     } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, path);
+    }
+  };
+
+  const sendBookingSMS = async (payload: any) => {
+    const accountSid = (import.meta as any).env.VITE_TWILIO_ACCOUNT_SID;
+    const authToken = (import.meta as any).env.VITE_TWILIO_AUTH_TOKEN;
+    const fromNumber = (import.meta as any).env.VITE_TWILIO_PHONE_NUMBER;
+
+    const userPhone = payload.phone || payload.userDetails?.phone || '';
+    if (!userPhone) {
+      console.warn('[SMS Dispatch] Customer phone number is missing.');
+      return;
+    }
+
+    const bookingId = payload.id || payload.bookingId || 'N/A';
+    const serviceName = payload.serviceName || payload.service?.name || 'N/A';
+    const bookingDate = payload.bookingDate || payload.date || 'N/A';
+    const bookingTime = payload.bookingTime || payload.timeSlot || 'N/A';
+    const therapist = payload.practitionerName || payload.practitioner?.name || 'To Be Assigned';
+    const city = payload.userDetails?.city || 'Raipur-Bhilai-Durg Area';
+
+    const smsBody = `
+MaatriSparsh Care: Your postnatal care session is CONFIRMED! 🌸
+Booking ID: ${bookingId}
+Program: ${serviceName}
+Schedule: ${bookingDate} @ ${bookingTime}
+Therapist: ${therapist}
+Location: Raipur/Bhilai/Durg Area (${city})
+
+Instructions: Please ensure a quiet, comfortable space at room temperature for your therapy session. Our team will coordinate with you via WhatsApp shortly to finalize arrival logistics.
+In case of any urgent update, feel free to contact us at +91 9183216100.
+Thank you for trusting MaatriSparsh! 🙏
+    `.trim();
+
+    if (accountSid && authToken && fromNumber) {
+      try {
+        const authHeader = 'Basic ' + btoa(`${accountSid}:${authToken}`);
+        const formData = new URLSearchParams();
+        formData.append('To', userPhone);
+        formData.append('From', fromNumber);
+        formData.append('Body', smsBody);
+
+        const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
+          method: 'POST',
+          headers: {
+            'Authorization': authHeader,
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: formData.toString()
+        });
+
+        if (!response.ok) {
+          const errText = await response.text();
+          throw new Error(`Twilio status ${response.status}: ${errText}`);
+        }
+
+        const resJson = await response.json();
+        console.log(`[Twilio SMS] Confirmation SMS successfully sent to ${userPhone}. MSG SID: ${resJson.sid}`);
+      } catch (err) {
+        console.error('Failed to dispatch user confirmation SMS via Twilio:', err);
+      }
+    } else {
+      console.warn('[Twilio SMS] Twilio API credentials are not configured in system settings. Logging detailed SMS message payload instead.');
+    }
+
+    try {
+      // Log SMS transmission payload to activityLogs collection
+      await addDoc(collection(db, 'activityLogs'), {
+        adminEmail: 'maatrisparsh@gmail.com',
+        action: 'SMS_BOUND_DATA',
+        details: `USER SMS CONTENT (To: ${userPhone}):\n${smsBody}`,
+        timestamp: new Date().toISOString()
+      });
+    } catch (logErr) {
+      console.error("Failed to append raw SMS logs:", logErr);
     }
   };
 
@@ -1387,6 +1841,7 @@ MaatriSparsh Internal Notification Service
         userProfile,
         isAdmin,
         bookings,
+        occupiedSlots,
         services,
         coupons,
         allUsersList,
@@ -1411,6 +1866,7 @@ MaatriSparsh Internal Notification Service
         verifyPhoneCode,
         checkEmailVerificationStatus,
         resendSecondaryVerification,
+        verifyEmailOtp,
         
         addOrUpdateService,
         deleteService,

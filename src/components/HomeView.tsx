@@ -58,7 +58,7 @@ export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: 
   const { t, language } = useLanguage();
 
   const [videoUrl, setVideoUrl] = useState<string>('');
-  const [isPlaying, setIsPlaying] = useState<boolean>(true);
+  const [isPlaying, setIsPlaying] = useState<boolean>(false); // Initialize to false, will sync onPlay
   const [isMuted, setIsMuted] = useState<boolean>(true);
   const [hasEnded, setHasEnded] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
@@ -92,12 +92,48 @@ export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: 
     };
   }, []);
 
+  // Try to play video when videoUrl becomes active
   useEffect(() => {
     if (videoRef.current && videoUrl) {
       videoRef.current.load();
-      videoRef.current.play().catch(e => console.log('Autoplay prevented:', e));
+      videoRef.current.play()
+        .then(() => {
+          setIsPlaying(true);
+          setHasEnded(false);
+        })
+        .catch(e => {
+          console.log('Initial load autoplay prevented:', e);
+          setIsPlaying(false);
+        });
     }
   }, [videoUrl]);
+
+  // Fallback autoplay handler for silent gesture triggers (scroll, click, touch) to bypass strict browser media policies
+  useEffect(() => {
+    const handleGesture = () => {
+      if (videoRef.current && videoRef.current.paused && !hasEnded) {
+        videoRef.current.play()
+          .then(() => {
+            setIsPlaying(true);
+            setHasEnded(false);
+          })
+          .catch(err => {
+            console.log('Gesture autoplay fallback failed:', err);
+          });
+      }
+    };
+
+    // Listen on multiple basic interaction points
+    window.addEventListener('click', handleGesture, { once: true, capture: true });
+    window.addEventListener('touchstart', handleGesture, { once: true, capture: true });
+    window.addEventListener('scroll', handleGesture, { once: true, capture: true });
+
+    return () => {
+      window.removeEventListener('click', handleGesture);
+      window.removeEventListener('touchstart', handleGesture);
+      window.removeEventListener('scroll', handleGesture);
+    };
+  }, [hasEnded]);
 
   const togglePlay = () => {
     if (!videoRef.current) return;
@@ -109,8 +145,12 @@ export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: 
         videoRef.current.currentTime = 0;
         setHasEnded(false);
       }
-      videoRef.current.play().catch(err => console.log('Autoplay blocked:', err));
-      setIsPlaying(true);
+      videoRef.current.play()
+        .then(() => setIsPlaying(true))
+        .catch(err => {
+          console.log('Manual play failed:', err);
+          setIsPlaying(false);
+        });
     }
   };
 
@@ -306,6 +346,14 @@ export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: 
                       autoPlay
                       muted={isMuted}
                       playsInline
+                      preload="auto"
+                      onPlay={() => {
+                        setIsPlaying(true);
+                        setHasEnded(false);
+                      }}
+                      onPause={() => {
+                        setIsPlaying(false);
+                      }}
                       onTimeUpdate={(e) => {
                         const v = e.currentTarget;
                         if (v.duration) {
@@ -322,15 +370,17 @@ export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: 
                   {/* Play/Pause Center Indicator */}
                   <div 
                     onClick={togglePlay}
-                    className="absolute inset-0 flex items-center justify-center bg-black/10 group-hover:bg-black/25 transition-all duration-300 cursor-pointer"
+                    className="absolute inset-0 flex items-center justify-center bg-black/15 group-hover:bg-black/25 transition-all duration-300 cursor-pointer"
                   >
                     {!isPlaying && (
                       <motion.div
-                        initial={{ scale: 0.8, opacity: 0 }}
+                        initial={{ scale: 0.85, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        className="p-4 rounded-full bg-white/90 shadow-xl text-emerald-800 backdrop-blur-xs flex items-center justify-center transform group-hover:scale-105 transition-all"
+                        exit={{ scale: 0.85, opacity: 0 }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
+                        className="p-5 rounded-full bg-white/95 text-emerald-800 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md flex items-center justify-center transform group-hover:scale-110 active:scale-95 transition-all duration-300 border border-white/20 select-none"
                       >
-                        {hasEnded ? <RotateCcw className="h-6 w-6" /> : <Play className="h-6 w-6 ml-0.5" />}
+                        {hasEnded ? <RotateCcw className="h-6 w-6" /> : <Play className="h-6 w-6 fill-current ml-0.5" />}
                       </motion.div>
                     )}
                   </div>

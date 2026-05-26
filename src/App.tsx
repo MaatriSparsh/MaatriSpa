@@ -31,11 +31,11 @@ export default function App() {
   // New Alert notification state
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const { user, bookings } = useFirebase();
+  const { user, userProfile, bookings } = useFirebase();
   const { t, language } = useLanguage();
 
   const isEmailUser = user?.providerData.some((p) => p.providerId === 'password');
-  const isPendingVerification = !!(user && isEmailUser && !user.emailVerified);
+  const isPendingVerification = !!(user && isEmailUser && !user.emailVerified && !userProfile?.isVerified);
 
   // Keep static and dynamic sync of booking count
   useEffect(() => {
@@ -282,7 +282,18 @@ export default function App() {
             onClose={() => setIsAuthOpen(false)}
             onSuccess={() => {
               if (shouldOpenBookingAfterAuth) {
-                setIsBookingOpen(true);
+                const isEmail = user?.providerData.some((p) => p.providerId === 'password');
+                const isPending = !!(user && isEmail && !user.emailVerified);
+                if (isPending) {
+                  setToastMessage(
+                    language === 'en'
+                      ? 'Registration successful! Verification link sent. Kindly verify your email from your inbox to book sessions.'
+                      : 'पंजीकरण सफल! सत्यापन लिंक भेज दिया गया है। सत्र बुक करने के लिए कृपया अपना ईमेल सत्यापित करें।'
+                  );
+                  setTimeout(() => setToastMessage(null), 8000);
+                } else {
+                  setIsBookingOpen(true);
+                }
                 setShouldOpenBookingAfterAuth(false);
               }
             }}
