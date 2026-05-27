@@ -117,7 +117,7 @@ export default function Footer({ setActiveTab, onOpenBooking }: FooterProps) {
               </li>
               <li className="flex items-center space-x-2.5">
                 <Mail className="h-4.5 w-4.5 text-amber-500 shrink-0" />
-                <span className="break-all">care@maatrisparsh.com</span>
+                <span className="break-all">care.maatrisparsh@gmail.com</span>
               </li>
             </ul>
           </div>
