@@ -61,7 +61,7 @@ export function ElegantLogo() {
     },
     hover: {
       scale: 1.06,
-      filter: 'drop-shadow(0 0 8px rgba(212, 163, 89, 0.6))',
+      filter: 'drop-shadow(0 0 10px rgba(223, 177, 91, 0.75))',
       transition: { duration: 0.3, ease: 'easeOut' }
     }
   };
@@ -74,22 +74,30 @@ export function ElegantLogo() {
       animate="animate"
       whileHover="hover"
     >
-      <svg viewBox="0 0 100 100" className="h-11 w-11 md:h-13 md:w-13 overflow-visible shrink-0" id="logo-emblem-svg">
+      <svg viewBox="0 0 100 100" className="h-11 w-11 md:h-13 md:w-13 overflow-visible shrink-0" id="logo-emblem-svg" filter="url(#goldGlow)">
         <defs>
           <linearGradient id="maatriGoldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#FFE082" /> {/* Light radiant cream gold */}
-            <stop offset="40%" stopColor="#DFB15B" /> {/* Classic soft glowing gold */}
-            <stop offset="70%" stopColor="#C59B27" /> {/* Ayurvedic deep mustard gold */}
-            <stop offset="100%" stopColor="#8A6D1C" /> {/* Rich antique bronze */}
+            <stop offset="0%" stopColor="#9B782F" />     {/* Deep warm gold shadow */}
+            <stop offset="15%" stopColor="#FFE59E" />    {/* Bright golden highlight */}
+            <stop offset="35%" stopColor="#DFB15B" />    {/* Classic middle gold */}
+            <stop offset="50%" stopColor="#FFF9E5" />    {/* Shiny radiant light gold */}
+            <stop offset="65%" stopColor="#C59B27" />    {/* Ayurvedic mustard gold */}
+            <stop offset="85%" stopColor="#FFDE8A" />    {/* Soft secondary highlight */}
+            <stop offset="100%" stopColor="#6E5212" />   {/* Deep antique bronze */}
           </linearGradient>
+          
+          {/* Subtle drop-shadow filter to give the golden logo 3D depth */}
+          <filter id="goldGlow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="1" stdDeviation="1.2" floodColor="#6E5212" floodOpacity="0.32" />
+          </filter>
         </defs>
 
         {/* 1. Circular Outer Ring with Gap at the top */}
         <motion.path 
-          d="M 32 18 A 38 38 0 1 0 68 18" 
+          d="M 32 18.0 A 40 40 0 1 0 68 18.0" 
           stroke="url(#maatriGoldGradient)" 
-          strokeWidth="3.2" 
-          strokeLinecap="round" 
+          strokeWidth="3.5" 
+          strokeLinecap="butt" 
           fill="none"
           variants={ringVariants}
           initial="hidden"
@@ -99,9 +107,9 @@ export function ElegantLogo() {
         {/* 2. Three Crown Leaves in the Top Gap */}
         {/* Middle Leaf (Upright) */}
         <motion.path 
-          d="M 50 14 C 47.5 11, 47.5 7, 50 3 C 52.5 7, 52.5 11, 50 14 Z" 
+          d="M 50 15 C 47.5 11, 47.5 5, 50 2 C 52.5 5, 52.5 11, 50 15 Z" 
           stroke="url(#maatriGoldGradient)"
-          strokeWidth="2.2"
+          strokeWidth="2.4"
           fill="none"
           variants={leafVariants}
           initial="hidden"
@@ -109,9 +117,9 @@ export function ElegantLogo() {
         />
         {/* Left Leaf (Tilted Left) */}
         <motion.path 
-          d="M 45.5 16.5 C 41.5 15, 39 11, 40.5 7 C 44 8, 46 12.5, 45.5 16.5 Z" 
+          d="M 45 16.5 C 41 15, 38.5 10, 40 5 C 43.5 6.5, 45.5 11.5, 45 16.5 Z" 
           stroke="url(#maatriGoldGradient)"
-          strokeWidth="2.2"
+          strokeWidth="2.4"
           fill="none"
           variants={leafVariants}
           initial="hidden"
@@ -119,20 +127,20 @@ export function ElegantLogo() {
         />
         {/* Right Leaf (Tilted Right) */}
         <motion.path 
-          d="M 54.5 16.5 C 58.5 15, 61 11, 59.5 7 C 56 8, 54 12.5, 54.5 16.5 Z" 
+          d="M 55 16.5 C 59 15, 61.5 10, 60 5 C 56.5 6.5, 54.5 11.5, 55 16.5 Z" 
           stroke="url(#maatriGoldGradient)"
-          strokeWidth="2.2"
+          strokeWidth="2.4"
           fill="none"
           variants={leafVariants}
           initial="hidden"
           animate="visible"
         />
 
-        {/* 3. Three Triadic Pearls/Seed Dots Inside */}
+        {/* 3. Three Triadic Pearls/Seed Dots Inside arranged as inverted triangle */}
         <motion.circle 
-          cx="46.5" 
-          cy="27" 
-          r="2.5" 
+          cx="42.5" 
+          cy="31.5" 
+          r="3.5" 
           fill="url(#maatriGoldGradient)"
           variants={dotVariants}
           custom={0}
@@ -140,9 +148,9 @@ export function ElegantLogo() {
           animate="visible"
         />
         <motion.circle 
-          cx="53.5" 
-          cy="27" 
-          r="2.5" 
+          cx="57.5" 
+          cy="31.5" 
+          r="3.5" 
           fill="url(#maatriGoldGradient)"
           variants={dotVariants}
           custom={1}
@@ -151,8 +159,8 @@ export function ElegantLogo() {
         />
         <motion.circle 
           cx="50" 
-          cy="32.5" 
-          r="2.5" 
+          cy="39.5" 
+          r="3.5" 
           fill="url(#maatriGoldGradient)"
           variants={dotVariants}
           custom={2}
@@ -163,9 +171,9 @@ export function ElegantLogo() {
         {/* 4. Two Sweeping Inner Cradle/Lotus Leaves */}
         {/* Left Inner Leaf */}
         <motion.path 
-          d="M 48.5 79 C 39 75, 35 55, 36.5 32 C 37 31, 38 31, 38.5 32 C 44.5 48, 48 65, 48.5 79 Z" 
+          d="M 50 90 C 18 80, 11 56, 22 39 C 28 54, 40 76, 50 90 Z" 
           stroke="url(#maatriGoldGradient)"
-          strokeWidth="2.6"
+          strokeWidth="2.8"
           fill="none"
           variants={leafVariants}
           initial="hidden"
@@ -173,9 +181,9 @@ export function ElegantLogo() {
         />
         {/* Right Inner Leaf */}
         <motion.path 
-          d="M 51.5 79 C 61 75, 65 55, 63.5 32 C 63 31, 62 31, 61.5 32 C 55.5 48, 52 65, 51.5 79 Z" 
+          d="M 50 90 C 82 80, 89 56, 78 39 C 72 54, 60 76, 50 90 Z" 
           stroke="url(#maatriGoldGradient)"
-          strokeWidth="2.6"
+          strokeWidth="2.8"
           fill="none"
           variants={leafVariants}
           initial="hidden"

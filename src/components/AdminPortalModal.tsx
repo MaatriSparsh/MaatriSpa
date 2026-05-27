@@ -432,7 +432,12 @@ export default function AdminPortalModal({ onClose, onOpenBookingWizard }: Admin
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {allUsersList.map((usr: any) => {
-                    const isUserAdmin = usr.role === 'admin' || usr.email?.toLowerCase() === 'maatrisparsh@gmail.com' || usr.email?.toLowerCase() === 'spaar161.pk@gmail.com';
+                    const isUserAdmin = 
+                      usr.role === 'admin' || 
+                      usr.email?.toLowerCase() === 'maatrisparsh@gmail.com' || 
+                      usr.email?.toLowerCase() === 'spaar161.pk@gmail.com' ||
+                      usr.email?.toLowerCase() === 'sonihimanshubit@gmail.com' ||
+                      usr.email?.toLowerCase() === 'hijosty@gmail.com';
                     return (
                       <div 
                         key={usr.uid} 

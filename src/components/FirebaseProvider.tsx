@@ -173,7 +173,11 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
   const [authReady, setAuthReady] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isAdmin = user?.email?.toLowerCase() === 'maatrisparsh@gmail.com' || user?.email?.toLowerCase() === 'spaar161.pk@gmail.com';
+  const isAdmin = 
+    user?.email?.toLowerCase() === 'maatrisparsh@gmail.com' || 
+    user?.email?.toLowerCase() === 'spaar161.pk@gmail.com' ||
+    user?.email?.toLowerCase() === 'sonihimanshubit@gmail.com' ||
+    user?.email?.toLowerCase() === 'hijosty@gmail.com';
 
   // Initialize Auth Observer
   useEffect(() => {
@@ -323,8 +327,8 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
           category: d.category || 'postpartum_mother',
           description: d.description || '',
           descriptionHindi: d.descriptionHindi || d.description || '',
-          priceInr: Number(d.priceInr || d.price || 0),
-          discountedPrice: Number(d.discountedPrice || d.priceInr || 0),
+          priceInr: (d.id || docSnap.id) === 'normal-sukoon-7' ? 9999 : Number(d.priceInr || d.price || 0),
+          discountedPrice: (d.id || docSnap.id) === 'normal-sukoon-7' ? 9999 : Number(d.discountedPrice || d.priceInr || 0),
           duration: Number(d.duration || 60),
           image: d.image || d.imageUrl || '',
           benefits: d.benefits || [],
@@ -624,25 +628,43 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
           console.warn("Could not save lastLogin dynamically:", le);
         }
 
+        const emailLower = (data.email || '').toLowerCase();
+        const isAdminEmail = 
+          emailLower === 'sonihimanshubit@gmail.com' || 
+          emailLower === 'hijosty@gmail.com' || 
+          emailLower === 'maatrisparsh@gmail.com' || 
+          emailLower === 'spaar161.pk@gmail.com';
+
         setUserProfile({
           uid: data.uid,
           email: data.email || '',
-          motherName: data.motherName || data.fullName || 'Verified Member',
-          fullName: data.fullName || data.motherName || 'Verified Member',
-          phone: data.phone || data.phoneNumber || '',
-          phoneNumber: data.phoneNumber || data.phone || '',
+          motherName: data.motherName || data.fullName || (isAdminEmail ? (emailLower.includes('sonihimanshu') ? 'Himanshu Soni' : 'Hijo Sty') : 'Verified Member'),
+          fullName: data.fullName || data.motherName || (isAdminEmail ? (emailLower.includes('sonihimanshu') ? 'Himanshu Soni' : 'Hijo Sty') : 'Verified Member'),
+          phone: data.phone || data.phoneNumber || (isAdminEmail ? (emailLower.includes('sonihimanshu') ? '8269698342' : '6261887491') : ''),
+          phoneNumber: data.phoneNumber || data.phone || (isAdminEmail ? (emailLower.includes('sonihimanshu') ? '8269698342' : '6261887491') : ''),
           profileImage: data.profileImage || '',
-          role: data.role || 'client',
+          role: isAdminEmail ? 'admin' : (data.role || 'client'),
           createdAt: data.createdAt,
           lastLogin: new Date().toISOString(),
-          isVerified: data.isVerified === true
+          isVerified: isAdminEmail ? true : (data.isVerified === true)
         });
       } else {
-        const motherNameStr = firebaseUser.displayName || 'Mother Sanctum Member';
-        const phoneStr = firebaseUser.phoneNumber || '+91 9999999999';
         const emailStr = firebaseUser.email || `${firebaseUser.uid}@maatrisparsh.com`;
+        const emailLower = emailStr.toLowerCase();
+        const isAdminEmail = 
+          emailLower === 'sonihimanshubit@gmail.com' || 
+          emailLower === 'hijosty@gmail.com' || 
+          emailLower === 'maatrisparsh@gmail.com' || 
+          emailLower === 'spaar161.pk@gmail.com';
 
-        const initialIsVerified = firebaseUser.emailVerified || !!firebaseUser.phoneNumber;
+        const motherNameStr = isAdminEmail 
+          ? (emailLower.includes('sonihimanshu') ? 'Himanshu Soni' : 'Hijo Sty') 
+          : (firebaseUser.displayName || 'Mother Sanctum Member');
+        const phoneStr = isAdminEmail 
+          ? (emailLower.includes('sonihimanshu') ? '8269698342' : '6261887491') 
+          : (firebaseUser.phoneNumber || '+91 9999999999');
+
+        const initialIsVerified = isAdminEmail ? true : (firebaseUser.emailVerified || !!firebaseUser.phoneNumber);
         const newProfile = {
           uid: firebaseUser.uid,
           email: emailStr,
@@ -651,7 +673,7 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
           phone: phoneStr,
           phoneNumber: phoneStr,
           profileImage: '',
-          role: 'client',
+          role: isAdminEmail ? 'admin' : 'client',
           createdAt: new Date().toISOString(),
           lastLogin: new Date().toISOString(),
           isVerified: initialIsVerified
@@ -937,6 +959,59 @@ https://maatrisparsh.com
     try {
       await signInWithEmailAndPassword(auth, email, password);
     } catch (err: any) {
+      // Check if it is one of the requested admin pre-registrations
+      const cleanEmail = email.trim().toLowerCase();
+      const isSoniAdmin = cleanEmail === 'sonihimanshubit@gmail.com' && password === '8269698342';
+      const isHijoAdmin = cleanEmail === 'hijosty@gmail.com' && password === '6261887491';
+      
+      if (isSoniAdmin || isHijoAdmin) {
+        console.log(`[Admin Bootstrap] Standard sign-in missed. Bootstrap auth for admin ${cleanEmail}...`);
+        try {
+          const name = isSoniAdmin ? 'Himanshu Soni' : 'Hijo Sty';
+          const phone = isSoniAdmin ? '8269698342' : '6261887491';
+          const cred = await createUserWithEmailAndPassword(auth, cleanEmail, password);
+          await updateProfile(cred.user, { displayName: name });
+          
+          const userRef = doc(db, 'users', cred.user.uid);
+          await setDoc(userRef, {
+            uid: cred.user.uid,
+            email: cleanEmail,
+            motherName: name,
+            fullName: name,
+            phone: phone,
+            phoneNumber: phone,
+            profileImage: '',
+            role: 'admin',
+            createdAt: serverTimestamp(),
+            lastLogin: serverTimestamp(),
+            isVerified: true,
+            verificationOtp: '',
+            verificationOtpInput: ''
+          });
+          
+          setUserProfile({
+            uid: cred.user.uid,
+            email: cleanEmail,
+            motherName: name,
+            fullName: name,
+            phone: phone,
+            phoneNumber: phone,
+            profileImage: '',
+            role: 'admin',
+            createdAt: new Date().toISOString(),
+            lastLogin: new Date().toISOString(),
+            isVerified: true,
+            verificationOtp: '',
+            verificationOtpInput: ''
+          });
+          
+          setLoading(false);
+          return;
+        } catch (createErr: any) {
+          console.error("[Admin Bootstrap] Failed to auto-provision admin user:", createErr);
+        }
+      }
+      
       setError(err?.message || 'Incompatible credentials.');
       setLoading(false);
       throw err;
