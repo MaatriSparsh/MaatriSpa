@@ -90,11 +90,18 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
 
   // Modern Calendar State & Helpers
   const today = new Date();
-  const getYYYYMMDD = (d: Date) => {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const dayVal = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${dayVal}`;
+  const getYYYYMMDD = (dOrYear: Date | number, month?: number, day?: number) => {
+    if (dOrYear instanceof Date) {
+      const y = dOrYear.getFullYear();
+      const m = String(dOrYear.getMonth() + 1).padStart(2, '0');
+      const dayVal = String(dOrYear.getDate()).padStart(2, '0');
+      return `${y}-${m}-${dayVal}`;
+    } else if (typeof dOrYear === 'number' && typeof month === 'number' && typeof day === 'number') {
+      const m = String(month + 1).padStart(2, '0');
+      const dayVal = String(day).padStart(2, '0');
+      return `${dOrYear}-${m}-${dayVal}`;
+    }
+    return '';
   };
   const todayStr = getYYYYMMDD(today);
 
@@ -711,12 +718,12 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
                         onClick={() => setSelectedSlot(slot)}
                         className={`py-2.5 rounded-xl border text-[11px] font-semibold tracking-wide text-center transition-all ${
                           isTaken
-                            ? 'border-red-100 bg-red-50 text-red-100 cursor-not-allowed relative opacity-70'
+                            ? 'border-red-150 bg-red-50/60 text-stone-400 cursor-not-allowed relative opacity-80'
                             : isPastTS
-                            ? 'border-stone-200 bg-stone-105 text-stone-350 cursor-not-allowed line-through relative opacity-50'
+                            ? 'border-stone-200 bg-stone-50 text-stone-350 cursor-not-allowed line-through relative opacity-50'
                             : isSelected
-                            ? 'border-emerald-850 bg-emerald-50 text-emerald-950 font-bold cursor-pointer ring-1 ring-emerald-800 shadow-sm'
-                            : 'border-stone-200 bg-white hover:bg-stone-50 text-stone-605 shadow-2xs cursor-pointer'
+                            ? 'border-emerald-800 bg-emerald-50 text-emerald-950 font-bold cursor-pointer ring-1 ring-emerald-800 shadow-sm'
+                            : 'border-stone-200 bg-white hover:bg-stone-50 text-stone-600 shadow-2xs cursor-pointer'
                         }`}
                         title={
                           isTaken 
