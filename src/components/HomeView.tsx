@@ -75,7 +75,7 @@ const getInstagramEmbedUrl = (url: string): string => {
   if (!url) return '';
   const match = url.match(/(?:reel|p)\/([a-zA-Z0-9_-]+)/);
   if (match && match[1]) {
-    return `https://www.instagram.com/reel/${match[1]}/embed`;
+    return `https://www.instagram.com/reel/${match[1]}/embed?autoplay=1&muted=1`;
   }
   return url;
 };

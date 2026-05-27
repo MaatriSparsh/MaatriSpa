@@ -16,13 +16,15 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
   const { t, language } = useLanguage();
 
   const isEmailUser = user?.providerData.some((p) => p.providerId === 'password');
-  const isPendingVerification = !!(user && isEmailUser && !user.emailVerified && !userProfile?.isVerified);
+  const isPendingVerification = isAdmin 
+    ? false 
+    : !!(user && isEmailUser && !user.emailVerified && !userProfile?.isVerified);
 
   const allServices = services && services.length > 0 ? services : STATIC_SERVICES;
-  // Restrict to ONLY care packages mentioned, unless the user is an admin
+  // Restrict to ONLY care packages mentioned, unless the user is an admin or we have a preselected service (like lactation or workshop)
   const activeServices = isAdmin 
     ? allServices 
-    : allServices.filter(s => s.category === 'postpartum_mother');
+    : allServices.filter(s => s.category === 'postpartum_mother' || s.id === preselectedServiceId);
 
   // Wizard steps: 'service' | 'practitioner' | 'slot' | 'details' | 'success'
   const [step, setStep] = useState<'service' | 'practitioner' | 'slot' | 'details' | 'success'>('service');
