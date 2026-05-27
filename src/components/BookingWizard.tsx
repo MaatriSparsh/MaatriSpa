@@ -12,15 +12,17 @@ interface BookingWizardProps {
 }
 
 export default function BookingWizard({ onClose, onBookingSuccess, preselectedServiceId }: BookingWizardProps) {
-  const { user, userProfile, addBooking, services, occupiedSlots } = useFirebase();
+  const { user, userProfile, addBooking, services, occupiedSlots, isAdmin } = useFirebase();
   const { t, language } = useLanguage();
 
   const isEmailUser = user?.providerData.some((p) => p.providerId === 'password');
   const isPendingVerification = !!(user && isEmailUser && !user.emailVerified && !userProfile?.isVerified);
 
   const allServices = services && services.length > 0 ? services : STATIC_SERVICES;
-  // Restrict to ONLY care packages mentioned, which correspond to 'postpartum_mother' category
-  const activeServices = allServices.filter(s => s.category === 'postpartum_mother');
+  // Restrict to ONLY care packages mentioned, unless the user is an admin
+  const activeServices = isAdmin 
+    ? allServices 
+    : allServices.filter(s => s.category === 'postpartum_mother');
 
   // Wizard steps: 'service' | 'practitioner' | 'slot' | 'details' | 'success'
   const [step, setStep] = useState<'service' | 'practitioner' | 'slot' | 'details' | 'success'>('service');
@@ -484,12 +486,16 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
             <div className="space-y-4" id="wizard-select-service">
               <div className="space-y-1">
                 <h4 className="font-serif text-sm font-bold text-stone-900">
-                  {language === 'en' ? 'Choose Postnatal Treatment Program' : 'उपचार पैकेज का चयन करें'}
+                  {isAdmin 
+                    ? (language === 'en' ? 'Choose Service or Program' : 'सेवा या उपचार पैकेज का चयन करें')
+                    : (language === 'en' ? 'Choose Postnatal Treatment Program' : 'उपचार पैकेज का चयन करें')}
                 </h4>
                 <p className="text-xs text-stone-500">
-                  {language === 'en' 
-                    ? 'Our systems focus on maternal musculoskeletal restoration and baby colic protection.'
-                    : 'हड्डियों के संरेखण पीठ दर्द निवारक, सूतिका मालिश और बच्चे के पेट दर्द से राहत देने वाले पैकेजेस।'}
+                  {isAdmin 
+                    ? (language === 'en' ? 'Select any service from all available packages, consultations, and workshops.' : 'सभी उपलब्ध पैकेजों, परामर्श और कार्यशालाओं में से किसी भी सेवा का चयन करें।')
+                    : (language === 'en' 
+                      ? 'Our systems focus on maternal musculoskeletal restoration and baby colic protection.'
+                      : 'हड्डियों के संरेखण पीठ दर्द निवारक, सूतिका मालिश और बच्चे के पेट दर्द से राहत देने वाले पैकेजेस।')}
                 </p>
               </div>
 

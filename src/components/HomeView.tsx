@@ -66,6 +66,20 @@ const resolveVideoSrc = (url: string): string => {
   return url;
 };
 
+const isInstagramUrl = (url: string): boolean => {
+  if (!url) return false;
+  return url.includes('instagram.com/reel/') || url.includes('instagram.com/p/');
+};
+
+const getInstagramEmbedUrl = (url: string): string => {
+  if (!url) return '';
+  const match = url.match(/(?:reel|p)\/([a-zA-Z0-9_-]+)/);
+  if (match && match[1]) {
+    return `https://www.instagram.com/reel/${match[1]}/embed`;
+  }
+  return url;
+};
+
 interface HomeViewProps {
   onNavigateToTab: (tab: string) => void;
   onOpenBookingWithService: (serviceId: string) => void;
@@ -84,7 +98,7 @@ export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const defaultVideo = 'https://drive.google.com/file/d/1BX8fJwlrqoGRYYXHUESXhWOTqXnkxhjA/view';
+  const defaultVideo = 'https://www.instagram.com/reel/DYzl-FIsD4e/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==';
 
   useEffect(() => {
     let active = true;
@@ -113,7 +127,9 @@ export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: 
 
   // Sync fallback helper when url changes
   useEffect(() => {
-    if (videoUrl && videoUrl.includes('drive.google.com')) {
+    if (videoUrl && isInstagramUrl(videoUrl)) {
+      setUseIframeFallback(true);
+    } else if (videoUrl && videoUrl.includes('drive.google.com')) {
       // Start with normal stream, but error callback switches to custom iFrame if rate limited
       setUseIframeFallback(false);
     } else {
@@ -378,7 +394,15 @@ export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: 
 
                 <div className="relative overflow-hidden rounded-xl shadow-lg border border-stone-200/60 bg-stone-950 group">
                   {videoUrl && (
-                    useIframeFallback ? (
+                    isInstagramUrl(videoUrl) ? (
+                      <iframe
+                        src={getInstagramEmbedUrl(videoUrl)}
+                        className="h-[480px] sm:h-[550px] w-full object-cover border-0"
+                        allow="autoplay; encrypted-media; clipboard-write; picture-in-picture"
+                        allowFullScreen
+                        id="hero-instagram-iframe-player"
+                      ></iframe>
+                    ) : useIframeFallback ? (
                       <iframe
                         src={`https://drive.google.com/file/d/${getDriveId(videoUrl)}/preview?autoplay=1&mute=1`}
                         className="h-[480px] sm:h-[550px] w-full object-cover border-0"

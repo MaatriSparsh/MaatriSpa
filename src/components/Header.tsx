@@ -14,41 +14,8 @@ interface HeaderProps {
   bookingCount: number;
 }
 
-// Beautiful customized vector logo representing the gold letter "M" forming a heart
-// containing a mother-infant silhouette and a gold health plus, on a soft pink circle back
+// Beautiful customized gold logo representando MaatriSparsh
 export function ElegantLogo() {
-  const ringVariants = {
-    hidden: { pathLength: 0, opacity: 0 },
-    visible: { 
-      pathLength: 1, 
-      opacity: 1,
-      transition: { duration: 1.5, ease: 'easeInOut' }
-    }
-  };
-
-  const leafVariants = {
-    hidden: { pathLength: 0, opacity: 0 },
-    visible: { 
-      pathLength: 1, 
-      opacity: 1, 
-      transition: { duration: 1.4, ease: 'easeOut', delay: 0.4 }
-    }
-  };
-
-  const dotVariants = {
-    hidden: { scale: 0, opacity: 0 },
-    visible: (i: number) => ({
-      scale: 1,
-      opacity: 1,
-      transition: { 
-        type: 'spring', 
-        stiffness: 120, 
-        damping: 8, 
-        delay: 1.0 + i * 0.15 
-      }
-    })
-  };
-
   const containerVariants = {
     animate: {
       y: [0, -1.5, 0],
@@ -61,135 +28,25 @@ export function ElegantLogo() {
     },
     hover: {
       scale: 1.06,
-      filter: 'drop-shadow(0 0 10px rgba(223, 177, 91, 0.75))',
+      filter: 'drop-shadow(0 0 10px rgba(223, 177, 91, 0.4))',
       transition: { duration: 0.3, ease: 'easeOut' }
     }
   };
 
   return (
     <motion.div 
-      className="relative flex h-14 w-14 md:h-16 md:w-16 items-center justify-center rounded-full bg-stone-100/40 border border-stone-200/50 shadow-xs shrink-0 overflow-visible" 
+      className="relative flex h-14 w-14 md:h-16 md:w-16 items-center justify-center rounded-full bg-stone-100/10 border border-stone-200/30 shadow-xs shrink-0 overflow-visible" 
       id="brand-emblem-badge"
       variants={containerVariants}
       animate="animate"
       whileHover="hover"
     >
-      <svg viewBox="0 0 100 100" className="h-11 w-11 md:h-13 md:w-13 overflow-visible shrink-0" id="logo-emblem-svg" filter="url(#goldGlow)">
-        <defs>
-          <linearGradient id="maatriGoldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#9B782F" />     {/* Deep warm gold shadow */}
-            <stop offset="15%" stopColor="#FFE59E" />    {/* Bright golden highlight */}
-            <stop offset="35%" stopColor="#DFB15B" />    {/* Classic middle gold */}
-            <stop offset="50%" stopColor="#FFF9E5" />    {/* Shiny radiant light gold */}
-            <stop offset="65%" stopColor="#C59B27" />    {/* Ayurvedic mustard gold */}
-            <stop offset="85%" stopColor="#FFDE8A" />    {/* Soft secondary highlight */}
-            <stop offset="100%" stopColor="#6E5212" />   {/* Deep antique bronze */}
-          </linearGradient>
-          
-          {/* Subtle drop-shadow filter to give the golden logo 3D depth */}
-          <filter id="goldGlow" x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="1" stdDeviation="1.2" floodColor="#6E5212" floodOpacity="0.32" />
-          </filter>
-        </defs>
-
-        {/* 1. Circular Outer Ring with Gap at the top */}
-        <motion.path 
-          d="M 32 18.0 A 40 40 0 1 0 68 18.0" 
-          stroke="url(#maatriGoldGradient)" 
-          strokeWidth="3.5" 
-          strokeLinecap="butt" 
-          fill="none"
-          variants={ringVariants}
-          initial="hidden"
-          animate="visible"
-        />
-
-        {/* 2. Three Crown Leaves in the Top Gap */}
-        {/* Middle Leaf (Upright) */}
-        <motion.path 
-          d="M 50 15 C 47.5 11, 47.5 5, 50 2 C 52.5 5, 52.5 11, 50 15 Z" 
-          stroke="url(#maatriGoldGradient)"
-          strokeWidth="2.4"
-          fill="none"
-          variants={leafVariants}
-          initial="hidden"
-          animate="visible"
-        />
-        {/* Left Leaf (Tilted Left) */}
-        <motion.path 
-          d="M 45 16.5 C 41 15, 38.5 10, 40 5 C 43.5 6.5, 45.5 11.5, 45 16.5 Z" 
-          stroke="url(#maatriGoldGradient)"
-          strokeWidth="2.4"
-          fill="none"
-          variants={leafVariants}
-          initial="hidden"
-          animate="visible"
-        />
-        {/* Right Leaf (Tilted Right) */}
-        <motion.path 
-          d="M 55 16.5 C 59 15, 61.5 10, 60 5 C 56.5 6.5, 54.5 11.5, 55 16.5 Z" 
-          stroke="url(#maatriGoldGradient)"
-          strokeWidth="2.4"
-          fill="none"
-          variants={leafVariants}
-          initial="hidden"
-          animate="visible"
-        />
-
-        {/* 3. Three Triadic Pearls/Seed Dots Inside arranged as inverted triangle */}
-        <motion.circle 
-          cx="42.5" 
-          cy="31.5" 
-          r="3.5" 
-          fill="url(#maatriGoldGradient)"
-          variants={dotVariants}
-          custom={0}
-          initial="hidden"
-          animate="visible"
-        />
-        <motion.circle 
-          cx="57.5" 
-          cy="31.5" 
-          r="3.5" 
-          fill="url(#maatriGoldGradient)"
-          variants={dotVariants}
-          custom={1}
-          initial="hidden"
-          animate="visible"
-        />
-        <motion.circle 
-          cx="50" 
-          cy="39.5" 
-          r="3.5" 
-          fill="url(#maatriGoldGradient)"
-          variants={dotVariants}
-          custom={2}
-          initial="hidden"
-          animate="visible"
-        />
-
-        {/* 4. Two Sweeping Inner Cradle/Lotus Leaves */}
-        {/* Left Inner Leaf */}
-        <motion.path 
-          d="M 50 90 C 18 80, 11 56, 22 39 C 28 54, 40 76, 50 90 Z" 
-          stroke="url(#maatriGoldGradient)"
-          strokeWidth="2.8"
-          fill="none"
-          variants={leafVariants}
-          initial="hidden"
-          animate="visible"
-        />
-        {/* Right Inner Leaf */}
-        <motion.path 
-          d="M 50 90 C 82 80, 89 56, 78 39 C 72 54, 60 76, 50 90 Z" 
-          stroke="url(#maatriGoldGradient)"
-          strokeWidth="2.8"
-          fill="none"
-          variants={leafVariants}
-          initial="hidden"
-          animate="visible"
-        />
-      </svg>
+      <img 
+        src="https://i.ibb.co/FQWxYkV/logomaatri.png" 
+        alt="MaatriSparsh Logo" 
+        className="h-11 w-11 md:h-13 md:w-13 object-contain shrink-0"
+        referrerPolicy="no-referrer"
+      />
     </motion.div>
   );
 }
