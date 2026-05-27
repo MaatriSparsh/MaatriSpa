@@ -12,7 +12,7 @@ interface BookingWizardProps {
 }
 
 export default function BookingWizard({ onClose, onBookingSuccess, preselectedServiceId }: BookingWizardProps) {
-  const { user, userProfile, addBooking, services, occupiedSlots, isAdmin } = useFirebase();
+  const { user, userProfile, addBooking, services, occupiedSlots, isAdmin, allUsersList } = useFirebase();
   const { t, language } = useLanguage();
 
   const isEmailUser = user?.providerData.some((p) => p.providerId === 'password');
@@ -41,6 +41,8 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
   const [selectedPractitioner, setSelectedPractitioner] = useState<Practitioner>(PRACTITIONERS[0]);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedSlot, setSelectedSlot] = useState<string>('');
+
+  const [selectedTargetUserId, setSelectedTargetUserId] = useState<string>('');
 
   // Auto-reset slot selection if it becomes unavailable on the active date
   useEffect(() => {
@@ -91,6 +93,22 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
 
   const [validationError, setValidationError] = useState('');
   const [createdBooking, setCreatedBooking] = useState<Booking | null>(null);
+
+  const handleSelectTargetUser = (userId: string) => {
+    setSelectedTargetUserId(userId);
+    if (!userId) {
+      setMotherName('');
+      setEmail('');
+      setPhone('');
+      return;
+    }
+    const selectedUserRecord = allUsersList?.find((usr: any) => usr.uid === userId);
+    if (selectedUserRecord) {
+      setMotherName(selectedUserRecord.motherName || selectedUserRecord.fullName || '');
+      setEmail(selectedUserRecord.email || '');
+      setPhone(selectedUserRecord.phone || selectedUserRecord.phoneNumber || '');
+    }
+  };
 
   // Modern Calendar State & Helpers
   const today = new Date();
@@ -260,8 +278,8 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
       return;
     }
 
-    // Dynamic Package Criteria validation
-    if (selectedService.category === 'postpartum_mother') {
+    // Dynamic Package Criteria validation (Bypassed for administrator/admin proxy bookings)
+    if (selectedService.category === 'postpartum_mother' && !isAdmin) {
       if (!deliveryDate) {
         setValidationError(
           language === 'en'
@@ -404,7 +422,7 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
         discountedPriceApplied: selectedService.priceInr,
         gstInr: Math.round(selectedService.priceInr * 0.18),
         finalPriceInr: Math.round(selectedService.priceInr * 1.18)
-      });
+      }, selectedTargetUserId || undefined);
 
       setCreatedBooking(bookingPayload);
       setStep('success');
@@ -774,6 +792,33 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
                     : 'सत्र विवरणी और विशेषज्ञ के मार्ग दर्शन के लिए आवश्यक सामान्य जानकारी भरें।'}
                 </p>
               </div>
+
+              {isAdmin && allUsersList && allUsersList.length > 0 && (
+                <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-3.5 space-y-2">
+                  <label className="text-xs font-bold text-emerald-950 uppercase tracking-wider block">
+                    {language === 'en' ? 'Book on behalf of a Registered Mother (Optional)' : 'पंजीकृत माता की ओर से बुक करें (वैकल्पिक)'}
+                  </label>
+                  <select
+                    value={selectedTargetUserId}
+                    onChange={(e) => handleSelectTargetUser(e.target.value)}
+                    className="w-full rounded-lg border border-stone-200 bg-white py-2 px-3 text-xs font-medium focus:border-emerald-800 focus:outline-hidden"
+                  >
+                    <option value="">
+                      {language === 'en' ? '-- Select a Registered Mother (Manual Entry helper) --' : '-- पंजीकृत माता चुनें (या मैन्युअल दर्ज करें) --'}
+                    </option>
+                    {allUsersList.map((usr: any) => (
+                      <option key={usr.uid} value={usr.uid}>
+                        {usr.motherName || usr.fullName || 'Unnamed'} ({usr.email || usr.phone || usr.uid})
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[10px] text-stone-500 italic">
+                    {language === 'en'
+                      ? "Selecting a mother will auto-populate her profile details below."
+                      : "किसी माता को चुनने से उनकी प्रोफाइल जानकारी नीचे स्वतः भर जाएगी।"}
+                  </p>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">

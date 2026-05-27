@@ -177,7 +177,8 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
     user?.email?.toLowerCase() === 'maatrisparsh@gmail.com' || 
     user?.email?.toLowerCase() === 'spaar161.pk@gmail.com' ||
     user?.email?.toLowerCase() === 'sonihimanshubit@gmail.com' ||
-    user?.email?.toLowerCase() === 'hijosty@gmail.com';
+    user?.email?.toLowerCase() === 'hijosty@gmail.com' ||
+    userProfile?.role === 'admin';
 
   // Initialize Auth Observer
   useEffect(() => {

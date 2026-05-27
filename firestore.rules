@@ -21,7 +21,7 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn() && request.auth.token.get('email', '').matches('(?i)^(spaar161\\.pk@gmail\\.com|maatrisparsh@gmail\\.com)$');
+      return isSignedIn() && request.auth.token.get('email', '').matches('(?i)^(spaar161\\.pk@gmail\\.com|maatrisparsh@gmail\\.com|sonihimanshubit@gmail\\.com|hijosty@gmail\\.com)$');
     }
 
     function isValidId(id) {
