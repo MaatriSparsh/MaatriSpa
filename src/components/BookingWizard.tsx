@@ -1,7 +1,7 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { X, Calendar, User, Clock, Check, ChevronRight, ChevronLeft, Heart, Baby, CheckCircle, Award } from 'lucide-react';
 import { Service, Practitioner, Booking } from '../types';
-import { SERVICES as STATIC_SERVICES, PRACTITIONERS, TIME_SLOTS } from '../data';
+import { SERVICES as STATIC_SERVICES, PRACTITIONERS } from '../data';
 import { useFirebase } from './FirebaseProvider';
 import { useLanguage } from './LanguageProvider';
 
@@ -56,7 +56,7 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
   const [babyName, setBabyName] = useState('');
   const [babyAgeWeeks, setBabyAgeWeeks] = useState('');
   const [email, setEmail] = useState(() => userProfile?.email || user?.email || '');
-  const [phone, setPhone] = useState(() => userProfile?.phone || '');
+  const [phone, setPhone] = useState('');
   const [notes, setNotes] = useState('');
 
   // Custom package criteria states
@@ -66,7 +66,9 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
     return 'none';
   });
   const [deliveryDate, setDeliveryDate] = useState('');
-  const [city, setCity] = useState<'Raipur' | 'Bhilai' | 'Durg' | ''>('');
+  const [city, setCity] = useState<'Raipur' | 'Bhilai' | 'Durg' | ''>(() => {
+    return 'Raipur'; // Default to Raipur to avoid unselected city error
+  });
   const [address, setAddress] = useState('');
   const [pincode, setPincode] = useState('');
   const [stitchCondition, setStitchCondition] = useState('');
@@ -86,35 +88,97 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
   const [validationError, setValidationError] = useState('');
   const [createdBooking, setCreatedBooking] = useState<Booking | null>(null);
 
-  // Generate simulated calendar days (next 7 days) starting from today (Saturday 23 May 2026)
-  const generateNext7Days = () => {
-    const days = [];
-    const baseDate = new Date('2026-05-23');
-    const localesEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const localesHi = ['रविवार', 'सोमवार', 'मंगलवार', 'बुधवार', 'गुरुवार', 'शुक्रवार', 'शनिवार'];
+  // Modern Calendar State & Helpers
+  const today = new Date();
+  const getYYYYMMDD = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const dayVal = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${dayVal}`;
+  };
+  const todayStr = getYYYYMMDD(today);
 
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(baseDate);
-      d.setDate(baseDate.getDate() + i);
-      const strDate = d.toISOString().split('T')[0];
-      days.push({
-        fullDate: strDate,
-        dayName: language === 'en' ? localesEn[d.getDay()] : localesHi[d.getDay()],
-        dayNum: d.getDate(),
-        month: language === 'en' 
-          ? d.toLocaleString('en-US', { month: 'short' })
-          : d.toLocaleString('hi-IN', { month: 'short' })
-      });
+  const [currentYear, setCurrentYear] = useState(today.getFullYear());
+  const [currentMonth, setCurrentMonth] = useState(today.getMonth());
+
+  useEffect(() => {
+    if (!selectedDate) {
+      setSelectedDate(todayStr);
     }
-    return days;
+  }, [selectedDate, todayStr]);
+
+  const handlePrevMonth = () => {
+    if (currentYear === today.getFullYear() && currentMonth <= today.getMonth()) {
+      return;
+    }
+    if (currentMonth === 0) {
+      setCurrentMonth(11);
+      setCurrentYear(currentYear - 1);
+    } else {
+      setCurrentMonth(currentMonth - 1);
+    }
   };
 
-  const bookingDays = generateNext7Days();
+  const handleNextMonth = () => {
+    if (currentMonth === 11) {
+      setCurrentMonth(0);
+      setCurrentYear(currentYear + 1);
+    } else {
+      setCurrentMonth(currentMonth + 1);
+    }
+  };
 
-  // If date is not selected, select the first available automatically
-  if (!selectedDate && bookingDays.length > 0) {
-    setSelectedDate(bookingDays[0].fullDate);
+  const getDaysInMonth = (year: number, month: number) => {
+    return new Date(year, month + 1, 0).getDate();
+  };
+
+  const getFirstDayOfMonth = (year: number, month: number) => {
+    return new Date(year, month, 1).getDay();
+  };
+
+  const daysInMonth = getDaysInMonth(currentYear, currentMonth);
+  const firstDayIndex = getFirstDayOfMonth(currentYear, currentMonth);
+
+  const calendarCells: (number | null)[] = [];
+  for (let i = 0; i < firstDayIndex; i++) {
+    calendarCells.push(null);
   }
+  for (let d = 1; d <= daysInMonth; d++) {
+    calendarCells.push(d);
+  }
+
+  // 15-Minute Dynamic Slot Generation (9:00 AM to 6:00 PM)
+  const timeSlotsCustomList = (() => {
+    const list: string[] = [];
+    let h = 9;
+    let m = 0;
+    while (h < 18) {
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const displayHour = h % 12 === 0 ? 12 : h % 12;
+      const fM = String(m).padStart(2, '0');
+      list.push(`${displayHour}:${fM} ${ampm}`);
+      m += 15;
+      if (m >= 60) {
+        m = 0;
+        h += 1;
+      }
+    }
+    return list;
+  })();
+
+  const isSlotPastToday = (slot: string) => {
+    if (selectedDate !== todayStr) return false;
+    const parts = slot.match(/(\d+):(\d+)\s*(AM|PM)/i);
+    if (!parts) return false;
+    let hrs = parseInt(parts[1], 10);
+    const mins = parseInt(parts[2], 10);
+    const ampm = parts[3].toUpperCase();
+    if (ampm === 'PM' && hrs !== 12) hrs += 12;
+    if (ampm === 'AM' && hrs === 12) hrs = 0;
+    const slotMins = hrs * 60 + mins;
+    const currentMins = today.getHours() * 60 + today.getMinutes();
+    return slotMins < currentMins;
+  };
 
   // Handle service selection change
   const handleSelectService = (service: Service) => {
@@ -176,11 +240,11 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
       return;
     }
 
-    if (!motherName || !email || !phone) {
+    if (!motherName || !email) {
       setValidationError(
         language === 'en'
-          ? 'Please specify the Mother’s Name, email coordinate, and telephone number.'
-          : 'कृपया माता का नाम, ईमेल आईडी और फोन नंबर अवश्य दर्ज करें।'
+          ? 'Please specify the Mother’s Name and email coordinate.'
+          : 'कृपया माता का नाम और ईमेल आईडी दर्ज करें।'
       );
       return;
     }
@@ -533,87 +597,146 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
           {step === 'slot' && (
             <div className="space-y-5" id="wizard-select-slot">
               <div className="space-y-1">
-                <h4 className="font-serif text-sm font-bold text-stone-900">
+                <h4 className="font-serif text-sm font-bold text-stone-900 border-b border-stone-100 pb-1.5 flex items-center gap-1.5">
+                  <Calendar className="h-4 w-4 text-emerald-800" />
                   {language === 'en' ? 'Select Date & Preferred Session Hour' : 'तिथि और पसंदीदा समय का चयन करें'}
                 </h4>
-                <p className="text-xs text-stone-500">
+                <p className="text-[11px] text-stone-500">
                   {language === 'en' 
-                    ? 'Showing treatment availability for the next 7 days in Hindu calender rhythm.'
-                    : 'आगामी ७ दिनों के लिए हमारी खाली समय स्लॉट की उपलब्धता नीचे दिखाई गई है।'}
+                    ? 'Please use our interactive calendar below to secure a date. Past dates are disabled.'
+                    : 'तारीख का चयन करने के लिए कैलेंडर का उपयोग करें। पुरानी तारीखें अक्षम कर दी गई हैं।'}
                 </p>
               </div>
 
-              {/* simulated date slider */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
-                  {language === 'en' ? 'Available Days' : 'उपलब्ध दिन'}
-                </label>
-                <div className="flex gap-2 overflow-x-auto pb-2" id="simulated-days-slider">
-                  {bookingDays.map((day) => {
-                    const isSelected = selectedDate === day.fullDate;
+              {/* Monthly Calendar UI Format */}
+              <div className="border border-stone-200 rounded-2xl bg-white p-3 shadow-xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-stone-800 font-serif">
+                    {new Date(currentYear, currentMonth).toLocaleDateString(language === 'en' ? 'en-US' : 'hi-IN', {
+                      month: 'long',
+                      year: 'numeric'
+                    })}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={handlePrevMonth}
+                      disabled={currentYear === today.getFullYear() && currentMonth <= today.getMonth()}
+                      className="p-1 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-stone-600 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleNextMonth}
+                      className="p-1 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-stone-600 cursor-pointer transition-colors"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Day legends */}
+                <div className="grid grid-cols-7 text-center text-[10px] font-mono font-bold text-stone-400 uppercase tracking-widest pb-1 border-b border-stone-100">
+                  {language === 'en' 
+                    ? ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => <span key={d}>{d}</span>)
+                    : ['रवि', 'सोम', 'मंगल', 'बुध', 'गुरु', 'शुक्र', 'शनि'].map(d => <span key={d}>{d}</span>)}
+                </div>
+
+                {/* Grid of days */}
+                <div className="grid grid-cols-7 gap-1 text-center">
+                  {calendarCells.map((cellDay, idx) => {
+                    if (cellDay === null) {
+                      return <div key={`empty-${idx}`} />;
+                    }
+
+                    const cellDateStr = getYYYYMMDD(currentYear, currentMonth, cellDay);
+                    const isSelected = selectedDate === cellDateStr;
+                    const isPast = cellDateStr < todayStr;
+
                     return (
                       <button
-                        key={day.fullDate}
+                        key={`day-${cellDateStr}`}
                         type="button"
-                        onClick={() => setSelectedDate(day.fullDate)}
-                        className={`p-3.5 rounded-xl border text-center flex flex-col items-center justify-center min-w-16 shrink-0 transition-all cursor-pointer ${
-                          isSelected
-                            ? 'border-emerald-800 bg-emerald-800 text-stone-50 shadow-md animate-pulse'
-                            : 'border-stone-200 bg-white hover:bg-stone-50 text-stone-605'
+                        disabled={isPast}
+                        onClick={() => {
+                          setSelectedDate(cellDateStr);
+                          setSelectedSlot(''); // Reset slot on changing date to prevent mismatch
+                        }}
+                        className={`py-2 text-xs rounded-xl font-medium transition-all ${
+                          isPast
+                            ? 'text-stone-300 bg-stone-50/50 cursor-not-allowed line-through'
+                            : isSelected
+                            ? 'bg-emerald-800 text-stone-50 font-extrabold shadow-xs hover:bg-emerald-900 border border-emerald-800 cursor-pointer'
+                            : 'text-stone-750 bg-white hover:bg-stone-100 border border-stone-150 cursor-pointer'
                         }`}
+                        title={isPast ? (language === 'en' ? 'Unavailable - Past Date' : 'अनुपलब्ध - पुरानी तिथि') : undefined}
                       >
-                        <span className={`text-[9px] uppercase tracking-wider block ${isSelected ? 'text-rose-100 font-bold' : 'text-stone-400'}`}>
-                          {day.dayName}
-                        </span>
-                        <span className="text-sm font-black text-stone-900 block font-serif leading-none py-1 text-inherit">
-                          {day.dayNum}
-                        </span>
-                        <span className="text-[9px] block text-inherit">
-                          {day.month}
-                        </span>
+                        {cellDay}
                       </button>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Time slots chooser */}
-              <div className="space-y-1.5 pt-2">
-                <label className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
-                  {language === 'en' ? 'Select Available Time Slot' : 'समय सीमा चुनें'}
-                </label>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  {TIME_SLOTS.map((slot) => {
+              {/* Time slots chooser with 15-minute interval slots */}
+              <div className="space-y-2 pt-1 border-t border-stone-100">
+                <div className="flex justify-between items-baseline pb-1">
+                  <label className="text-[10px] font-bold text-stone-500 uppercase tracking-wider flex items-center gap-1">
+                    <Clock className="h-3 w-3 text-stone-400" />
+                    {language === 'en' ? 'Select Available Time Slot' : 'समय सीमा चुनें'}
+                  </label>
+                  {selectedDate && (
+                    <span className="text-[10px] font-mono text-emerald-805 bg-emerald-50 px-2 py-0.5 rounded-full font-bold">
+                      {selectedDate}
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 max-h-52 overflow-y-auto pr-1">
+                  {timeSlotsCustomList.map((slot) => {
                     const isSelected = selectedSlot === slot;
                     const isTaken = occupiedSlots?.some(
                       (occ) =>
                         occ.date === selectedDate &&
                         occ.timeSlot.trim().toLowerCase() === slot.trim().toLowerCase()
                     );
+                    const isPastTS = isSlotPastToday(slot);
+                    const isDisabled = isTaken || isPastTS;
 
                     return (
                       <button
                         key={slot}
                         type="button"
-                        disabled={isTaken}
+                        disabled={isDisabled}
                         onClick={() => setSelectedSlot(slot)}
-                        className={`py-3 rounded-lg border text-xs font-semibold tracking-wide text-center transition-all ${
+                        className={`py-2.5 rounded-xl border text-[11px] font-semibold tracking-wide text-center transition-all ${
                           isTaken
-                            ? 'border-stone-200 bg-stone-100 text-stone-400 cursor-not-allowed line-through relative'
+                            ? 'border-red-100 bg-red-50 text-red-100 cursor-not-allowed relative opacity-70'
+                            : isPastTS
+                            ? 'border-stone-200 bg-stone-105 text-stone-350 cursor-not-allowed line-through relative opacity-50'
                             : isSelected
-                            ? 'border-emerald-800 bg-emerald-50 text-emerald-950 font-bold cursor-pointer'
-                            : 'border-stone-200 bg-white hover:bg-stone-50 text-stone-600 cursor-pointer'
+                            ? 'border-emerald-850 bg-emerald-50 text-emerald-950 font-bold cursor-pointer ring-1 ring-emerald-800 shadow-sm'
+                            : 'border-stone-200 bg-white hover:bg-stone-50 text-stone-605 shadow-2xs cursor-pointer'
                         }`}
-                        title={isTaken ? (language === 'en' ? 'Unavailable - Already Booked' : 'अनुपलब्ध - पहले से बुक है') : undefined}
+                        title={
+                          isTaken 
+                            ? (language === 'en' ? 'Booked - Choose another' : 'बुक है - दूसरा समय चुनें') 
+                            : isPastTS 
+                            ? (language === 'en' ? 'Unavailable - Past slot of today' : 'अनुपलब्ध - बीत चुका समय') 
+                            : undefined
+                        }
                       >
-                        <span className="flex items-center justify-center gap-1.5">
-                          <span>⏱</span>
+                        <span className="flex items-center justify-center gap-1.5 px-1 py-0.5">
                           <span>{slot}</span>
-                          {isTaken && (
-                            <span className="text-[9px] font-mono font-bold text-rose-600 uppercase tracking-wide">
-                              ({language === 'en' ? 'Taken' : 'बुक है'})
+                          {isTaken ? (
+                            <span className="text-[8.5px] font-mono font-bold text-red-650 uppercase bg-red-100 px-1 rounded bg-red-100 text-red-700 tracking-wide">
+                              ({language === 'en' ? 'Booked' : 'बुक'})
                             </span>
-                          )}
+                          ) : isPastTS ? (
+                            <span className="text-[8.5px] font-mono font-semibold text-stone-400 uppercase tracking-wide">
+                              ({language === 'en' ? 'Passed' : 'बीता'})
+                            </span>
+                          ) : null}
                         </span>
                       </button>
                     );
@@ -666,20 +789,7 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-stone-500 uppercase tracking-wider block">
-                    {language === 'en' ? 'WhatsApp / Phone Number *' : 'मोबाइल / व्हाट्सएप्प नंबर *'}
-                  </label>
-                  <input
-                    type="tel"
-                    required
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+91 XXXXX XXXXX"
-                    className="w-full rounded-xl border border-stone-200 bg-stone-50/40 py-2.5 px-4 text-xs font-medium focus:border-emerald-800 focus:outline-hidden"
-                  />
-                </div>
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 sm:col-span-2">
                   <label className="text-xs font-bold text-stone-500 uppercase tracking-wider block">
                     {language === 'en' ? 'Email coordinates *' : 'ईमेल आईडी *'}
                   </label>

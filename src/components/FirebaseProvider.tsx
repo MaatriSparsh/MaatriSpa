@@ -8,9 +8,6 @@ import {
   signOut,
   updateProfile,
   sendPasswordResetEmail,
-  RecaptchaVerifier,
-  signInWithPhoneNumber,
-  ConfirmationResult,
   User as FirebaseUser,
   sendEmailVerification,
   reload
@@ -59,9 +56,6 @@ interface FirebaseContextType {
   editBookingInFirestore: (bookingId: string, updates: Partial<Booking>) => Promise<void>;
   deleteBookingInFirestore: (bookingId: string) => Promise<void>;
   sendPasswordReset: (email: string) => Promise<void>;
-  setupRecaptcha: (containerId: string) => void;
-  signInWithPhone: (phoneNumber: string, isRegistering?: boolean, pendingData?: { fullName: string; email: string }) => Promise<void>;
-  verifyPhoneCode: (code: string) => Promise<void>;
   checkEmailVerificationStatus: () => Promise<boolean>;
   resendSecondaryVerification: () => Promise<void>;
   verifyEmailOtp: (otpCode: string) => Promise<boolean>;
@@ -178,8 +172,6 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
   const [loading, setLoading] = useState<boolean>(true);
   const [authReady, setAuthReady] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
-  const [pendingRegistration, setPendingRegistration] = useState<{ fullName: string; email: string; phoneNumber: string } | null>(null);
 
   const isAdmin = user?.email?.toLowerCase() === 'maatrisparsh@gmail.com' || user?.email?.toLowerCase() === 'spaar161.pk@gmail.com';
 
@@ -646,9 +638,9 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
           isVerified: data.isVerified === true
         });
       } else {
-        const motherNameStr = pendingRegistration?.fullName || firebaseUser.displayName || 'Mother Sanctum Member';
-        const phoneStr = pendingRegistration?.phoneNumber || firebaseUser.phoneNumber || '+91 9999999999';
-        const emailStr = pendingRegistration?.email || firebaseUser.email || `${firebaseUser.uid}@maatrisparsh.com`;
+        const motherNameStr = firebaseUser.displayName || 'Mother Sanctum Member';
+        const phoneStr = firebaseUser.phoneNumber || '+91 9999999999';
+        const emailStr = firebaseUser.email || `${firebaseUser.uid}@maatrisparsh.com`;
 
         const initialIsVerified = firebaseUser.emailVerified || !!firebaseUser.phoneNumber;
         const newProfile = {
@@ -680,7 +672,6 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
         });
 
         setUserProfile(newProfile);
-        setPendingRegistration(null);
       }
       setLoading(false);
     } catch (err) {
@@ -1037,12 +1028,20 @@ https://maatrisparsh.com
         finalPriceInr: bData.finalPriceInr || 3000
       };
       
-      await setDoc(docRef, cleanUndefined(payload));
-
-      // Mark the selected time slot as occupied for the selected day
+      // Mark the selected time slot as occupied for the selected day with double booking prevention
       if (payload.date && payload.timeSlot) {
         const slotId = `${payload.date}_${payload.timeSlot.replace(/\s+/g, '_')}`;
-        await setDoc(doc(db, 'occupiedSlots', slotId), {
+        const slotDocRef = doc(db, 'occupiedSlots', slotId);
+        
+        // Fetch to ensure slot is currently available
+        const slotSnap = await getDoc(slotDocRef);
+        if (slotSnap.exists()) {
+          throw new Error('This time slot has already been booked by another user. Please select another slot.');
+        }
+
+        await setDoc(docRef, cleanUndefined(payload));
+
+        await setDoc(slotDocRef, {
           id: slotId,
           date: payload.date,
           timeSlot: payload.timeSlot,
@@ -1050,6 +1049,8 @@ https://maatrisparsh.com
           status: 'occupied',
           updatedAt: new Date().toISOString()
         });
+      } else {
+        await setDoc(docRef, cleanUndefined(payload));
       }
 
       await logAdminAction('CREATE_BOOKING', `Booking ${bData.id} custom-created for customer ${payload.customerName}`);
@@ -1714,125 +1715,7 @@ MaatriSparsh Internal Notification Service
     }
   };
 
-  const setupRecaptcha = (containerId: string) => {
-    try {
-      if (!(window as any).recaptchaVerifier) {
-        (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
-          size: 'invisible',
-        });
-      }
-    } catch (e) {
-      console.error("Recaptcha setup error", e);
-    }
-  };
-
-  const signInWithPhone = async (phoneNumber: string, isRegistering?: boolean, pendingData?: { fullName: string; email: string }) => {
-    setError(null);
-    setLoading(true);
-    try {
-      // 1. Prevent duplicate accounts or check account existence
-      const q = query(collection(db, 'users'), where('phone', '==', phoneNumber));
-      const docSnapshots = await getDocs(q);
-      const exists = !docSnapshots.empty;
-
-      if (isRegistering && exists) {
-        throw new Error(
-          window.location.hash.includes('lang=hi') ? 'यह फ़ोन नंबर पहले से पंजीकृत है। कृपया साइन इन करें।' : 'This phone number is already registered with an active profile. Please select Sign In.'
-        );
-      }
-      if (!isRegistering && !exists) {
-        throw new Error(
-          window.location.hash.includes('lang=hi') ? 'इस फ़ोन नंबर के लिए कोई प्रोफ़ाइल नहीं मिली। कृपया पहले खाता बनाएं।' : 'No care profile found for this phone number. Please Create an Account first.'
-        );
-      }
-
-      if (isRegistering && pendingData) {
-        setPendingRegistration({
-          fullName: pendingData.fullName,
-          email: pendingData.email || '',
-          phoneNumber: phoneNumber
-        });
-      } else {
-        setPendingRegistration(null);
-      }
-
-      const appVerifier = (window as any).recaptchaVerifier;
-      if (!appVerifier) {
-        throw new Error('reCAPTCHA security verifier is initializing. Please try again in 2 seconds.');
-      }
-
-      const result = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
-      setConfirmationResult(result);
-      setLoading(false);
-    } catch (err: any) {
-      setError(err?.message || 'Failed to send OTP verification code.');
-      setLoading(false);
-      throw err;
-    }
-  };
-
-  const verifyPhoneCode = async (code: string) => {
-    if (!confirmationResult) throw new Error('No confirmation results active. Click resend to try again.');
-    setError(null);
-    setLoading(true);
-    try {
-      const credential = await confirmationResult.confirm(code);
-      const firebaseUser = credential.user;
-
-      if (firebaseUser) {
-        const userRef = doc(db, 'users', firebaseUser.uid);
-        const docSnap = await getDoc(userRef);
-
-        if (!docSnap.exists() && pendingRegistration) {
-          const profileData = {
-            uid: firebaseUser.uid,
-            email: pendingRegistration.email || '',
-            motherName: pendingRegistration.fullName,
-            fullName: pendingRegistration.fullName,
-            phone: pendingRegistration.phoneNumber,
-            phoneNumber: pendingRegistration.phoneNumber,
-            profileImage: '',
-            role: 'client',
-            createdAt: serverTimestamp(),
-            lastLogin: serverTimestamp(),
-            isVerified: true
-          };
-          await setDoc(userRef, profileData);
-
-          setUserProfile({
-            ...profileData,
-            createdAt: new Date().toISOString(),
-            lastLogin: new Date().toISOString()
-          });
-          setPendingRegistration(null);
-        } else if (docSnap.exists()) {
-          const currentProfile = docSnap.data();
-          await setDoc(userRef, { lastLogin: serverTimestamp() }, { merge: true });
-          
-          setUserProfile({
-            uid: currentProfile.uid,
-            email: currentProfile.email || '',
-            motherName: currentProfile.motherName || currentProfile.fullName || 'Verified Member',
-            fullName: currentProfile.fullName || currentProfile.motherName || 'Verified Member',
-            phone: currentProfile.phone || currentProfile.phoneNumber || '',
-            phoneNumber: currentProfile.phoneNumber || currentProfile.phone || '',
-            profileImage: currentProfile.profileImage || '',
-            role: currentProfile.role || 'client',
-            createdAt: currentProfile.createdAt,
-            lastLogin: new Date().toISOString(),
-            isVerified: currentProfile.isVerified === true
-          });
-        }
-      }
-
-      setConfirmationResult(null);
-      setLoading(false);
-    } catch (err: any) {
-      setError(err?.message || 'Invalid or expired OTP code entered.');
-      setLoading(false);
-      throw err;
-    }
-  };
+  // setupRecaptcha, signInWithPhone, and verifyPhoneCode have been removed per user instruction.
 
   return (
     <FirebaseContext.Provider
@@ -1861,9 +1744,6 @@ MaatriSparsh Internal Notification Service
         editBookingInFirestore,
         deleteBookingInFirestore,
         sendPasswordReset,
-        setupRecaptcha,
-        signInWithPhone,
-        verifyPhoneCode,
         checkEmailVerificationStatus,
         resendSecondaryVerification,
         verifyEmailOtp,
