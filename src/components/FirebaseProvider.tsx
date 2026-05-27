@@ -321,11 +321,20 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
       const list: Service[] = [];
       snapshot.forEach((docSnap) => {
         const d = docSnap.data();
+        const category = d.category || 'postpartum_mother';
+        if (category !== 'postpartum_mother') {
+          if (isAdmin) {
+            deleteDoc(doc(db, servicesPath, docSnap.id))
+              .then(() => console.log(`Deleted deprecated service: ${docSnap.id}`))
+              .catch((err) => console.error(`Error deleting deprecated service:`, docSnap.id, err));
+          }
+          return;
+        }
         list.push({
           id: d.id || docSnap.id,
           name: d.name || '',
           nameHindi: d.nameHindi || d.name || '',
-          category: d.category || 'postpartum_mother',
+          category: category,
           description: d.description || '',
           descriptionHindi: d.descriptionHindi || d.description || '',
           priceInr: (d.id || docSnap.id) === 'normal-sukoon-7' ? 9999 : Number(d.priceInr || d.price || 0),

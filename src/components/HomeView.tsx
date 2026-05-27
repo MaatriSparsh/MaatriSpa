@@ -267,27 +267,27 @@ export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: 
 
   const getProfiledRecommendation = (): { recommendedService: Service; reason: string; reasonHindi: string } => {
     if (need === 'lactation') {
-      const srv = activeServices.find(s => s.id === 'lactation-consult') || activeServices[0];
+      const srv = activeServices.find(s => s.id === 'normal-sukoon-7') || activeServices[0];
       return {
         recommendedService: srv,
-        reason: "In early lactation phases, fixing the latch posture and supporting the nursing alignment prevents nipple soreness and guarantees adequate milk stream.",
-        reasonHindi: "शुरुआती स्तनपान के दौरान, सही पोजिशन व बच्चे के मुंह के एलाइनमेंट को ठीक करने से स्तन की सूजन से आराम मिलता है और दूध का प्रवाह प्राकृतिक रूप से बढ़ता है।"
+        reason: "Our 7-Day Sukoon Saptah package includes highly skilled lactation hold posture training and baby feeding alignment which prevents breast soreness and naturally supports healthy milk flow.",
+        reasonHindi: "हमारा 7 दिवसीय सुकून सप्ताह पैकेज प्रसवोत्तर स्तनपान और विशेष लैक्टेशन देखभाल से सुसज्जित है। विशेषज्ञ थेरेपिस्ट सही मुद्रा व बेबी डक्ट हेल्थ एलाइनमेंट सिखाते हैं जो माताओं को आराम देता है।"
       };
     }
     if (need === 'blues') {
-      const srv = activeServices.find(s => s.id === 'postpartum-emotional-circle') || activeServices[1] || activeServices[0];
+      const srv = activeServices.find(s => s.id === 'normal-puran-14') || activeServices[1] || activeServices[0];
       return {
         recommendedService: srv,
-        reason: "Raw hormonal shifts combined with acute sleep deprivation are entirely valid. Speak to our perinatal mind supporter for safe emotional anchors.",
-        reasonHindi: "प्रसवोत्तर गंभीर अनिंद्रा और तनावपूर्ण हार्मोनल बदलावों के दौरान मानसिक शांति के लिए हमारे मातृ और शिशु कल्याण विशेषज्ञ से परामर्श अत्यंत आवश्यक है।"
+        reason: "Hormonal shifts require maximum physical comfort and sensory soothing. The 14-Day Puran Aarohan treatment provides comforting traditional warm oil flow therapies to deeply anchor and ground your nervous system.",
+        reasonHindi: "हार्मोनल बदलाव व थकावट के दौरान गहन आराम की आवश्यकता होती है। हमारा 14-दिवसीय पूर्ण आरोग्यता / सूतिका आरोग्यता पैकेज प्राचीन केरल पद्धतियों के विशेष तेल प्रवाह व सूतिका स्पा द्वारा मानसिक शांति व ऊर्जा प्रदान करता है।"
       };
     }
-    // general pain / colic -> nutrition workshop
-    const srv = activeServices.find(s => s.id === 'postpartum-diet-workshop') || activeServices[2] || activeServices[0];
+    // general pain / colic -> nutrition, alignment
+    const srv = activeServices.find(s => s.id === 'lscs-navya-4') || activeServices[2] || activeServices[0];
     return {
       recommendedService: srv,
-      reason: "Wholesome kitchen nutrition utilizing pure whole wheat elements and digestive comfort foods is recommended to assist physical revitalization and ease infant wind-gas naturally.",
-      reasonHindi: "कमर दर्द से शारीरिक रिकवरी व ताकत पुनः सुदृढ़ करने के लिए शुद्ध रेसिपी की कार्यशाला। यह माँ के शरीर के भीतरी सुधार व शिशु की पेट गैस को प्राकृतिक रूप से कम करने में विशेष सहायक है।"
+      reason: "Postpartum abdominal binding, correct sleeping positions, and pediatric digestive colic wraps under Navya LSCS Care helps mothers manage surgical incisions while securing deep comfort from joint soreness and lower spine stress.",
+      reasonHindi: "सिजेरियन डिलीवरी के बाद सही संचलन और शिशु पाचन मरोड़ में आराम के लिए ‘नव्या रिकवरी’। बेली बाइंडिंग और एर्गोनोमिक रीढ़ संरेखण मांसपेशियों की सूजन और पीठ दर्द में त्वरित राहत देते हैं।"
     };
   };
 
@@ -351,7 +351,7 @@ export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: 
                   <ArrowRight className="h-4 w-4 text-rose-200 shrink-0" />
                 </button>
                 <button
-                  onClick={() => onOpenBookingWithService('lactation-consult')}
+                  onClick={() => onOpenBookingWithService('normal-sukoon-7')}
                   className="flex items-center justify-center rounded-full border border-stone-300 bg-white px-6 py-3.5 text-xs sm:text-sm font-bold text-stone-800 hover:bg-stone-50 transition-all active:scale-95 cursor-pointer"
                 >
                   {t.latchingBtn}
@@ -418,7 +418,22 @@ export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: 
                         autoPlay={true}
                         muted={true}
                         playsInline={true}
+                        loop={true}
                         preload="auto"
+                        onLoadedMetadata={(e) => {
+                          const v = e.currentTarget;
+                          v.muted = true;
+                          v.play().catch(err => {
+                            console.log("onLoadedMetadata autoplay trigger:", err);
+                          });
+                        }}
+                        onCanPlay={(e) => {
+                          const v = e.currentTarget;
+                          v.muted = true;
+                          v.play().catch(err => {
+                            console.log("onCanPlay autoplay trigger:", err);
+                          });
+                        }}
                         onPlay={() => {
                           setIsPlaying(true);
                           setHasEnded(false);
