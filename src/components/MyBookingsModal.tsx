@@ -141,9 +141,28 @@ export default function MyBookingsModal({ onClose }: MyBookingsModalProps) {
                             )}
 
                             {booking.userDetails.address && (
-                              <div className="text-stone-700 bg-white border border-stone-150 p-2 rounded-lg mt-1 text-[10.5px]">
-                                <span className="font-semibold text-emerald-900">📍 Home Visit Address:</span>
-                                <p className="font-semibold text-stone-900 mt-0.5">{booking.userDetails.address}, {booking.userDetails.city || 'Raipur'} {booking.userDetails.pincode ? `- ${booking.userDetails.pincode}` : ''}</p>
+                              <div className="text-stone-700 bg-white border border-stone-150 p-2 text-[10.5px] rounded-lg mt-1 space-y-1.5">
+                                <div>
+                                  <span className="font-semibold text-emerald-900">📍 Home Visit Address:</span>
+                                  <p className="font-semibold text-stone-900 mt-0.5">{booking.userDetails.address}, {booking.userDetails.city || 'Raipur'} {booking.userDetails.pincode ? `- ${booking.userDetails.pincode}` : ''}</p>
+                                </div>
+                                {booking.userDetails.latitude && booking.userDetails.longitude && (
+                                  <div className="pt-1.5 border-t border-stone-100 flex flex-wrap items-center justify-between gap-1 text-[9.5px]">
+                                    <span className="font-mono text-stone-500 bg-stone-50 px-1 py-0.5 rounded">
+                                      GPS: {booking.userDetails.latitude.toFixed(5)}, {booking.userDetails.longitude.toFixed(5)}
+                                    </span>
+                                    {booking.userDetails.googleMapsUrl && (
+                                      <a
+                                        href={booking.userDetails.googleMapsUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="inline-flex items-center gap-1 font-bold text-emerald-800 bg-emerald-50/75 hover:bg-emerald-100 px-2 py-0.5 rounded transition cursor-pointer"
+                                      >
+                                        🗺️ Check Map
+                                      </a>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             )}
 

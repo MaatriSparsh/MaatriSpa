@@ -1,9 +1,17 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { X, Calendar, User, Clock, Check, ChevronRight, ChevronLeft, Heart, Baby, CheckCircle, Award } from 'lucide-react';
+import { APIProvider, Map, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
 import { Service, Practitioner, Booking } from '../types';
 import { SERVICES as STATIC_SERVICES, PRACTITIONERS } from '../data';
 import { useFirebase } from './FirebaseProvider';
 import { useLanguage } from './LanguageProvider';
+
+const API_KEY =
+  process.env.GOOGLE_MAPS_PLATFORM_KEY ||
+  (import.meta as any).env?.VITE_GOOGLE_MAPS_PLATFORM_KEY ||
+  (globalThis as any).GOOGLE_MAPS_PLATFORM_KEY ||
+  '';
+const hasValidKey = Boolean(API_KEY) && API_KEY !== 'YOUR_API_KEY';
 
 interface BookingWizardProps {
   onClose: () => void;
@@ -78,6 +86,42 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
   const [stitchCondition, setStitchCondition] = useState('');
   const [focusArea, setFocusArea] = useState('');
   const [areaAccepted, setAreaAccepted] = useState(false);
+
+  // Google Maps Coordinates and tracking URL
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [googleMapsUrl, setGoogleMapsUrl] = useState<string>('');
+  const [mapCenter, setMapCenter] = useState({ lat: 21.2512, lng: 81.6296 });
+  const [mapZoom, setMapZoom] = useState(13);
+
+  // Automatically center map and set default pins when city changes
+  useEffect(() => {
+    if (city === 'Raipur') {
+      const coords = { lat: 21.2512, lng: 81.6296 };
+      setMapCenter(coords);
+      if (!latitude) {
+        setLatitude(coords.lat);
+        setLongitude(coords.lng);
+        setGoogleMapsUrl(`https://www.google.com/maps?q=${coords.lat},${coords.lng}`);
+      }
+    } else if (city === 'Bhilai') {
+      const coords = { lat: 21.1904, lng: 81.3917 };
+      setMapCenter(coords);
+      if (!latitude) {
+        setLatitude(coords.lat);
+        setLongitude(coords.lng);
+        setGoogleMapsUrl(`https://www.google.com/maps?q=${coords.lat},${coords.lng}`);
+      }
+    } else if (city === 'Durg') {
+      const coords = { lat: 21.1859, lng: 81.2777 };
+      setMapCenter(coords);
+      if (!latitude) {
+        setLatitude(coords.lat);
+        setLongitude(coords.lng);
+        setGoogleMapsUrl(`https://www.google.com/maps?q=${coords.lat},${coords.lng}`);
+      }
+    }
+  }, [city]);
 
   useEffect(() => {
     if (selectedService.id.startsWith('normal-')) {
@@ -367,6 +411,9 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
         pincode: selectedService.category === 'postpartum_mother' ? (pincode || undefined) : undefined,
         stitchCondition: selectedService.id.startsWith('lscs-') ? (stitchCondition || undefined) : undefined,
         focusArea: selectedService.category === 'consultation' ? (focusArea || undefined) : undefined,
+        latitude: latitude || undefined,
+        longitude: longitude || undefined,
+        googleMapsUrl: googleMapsUrl || undefined,
       },
       status: 'Confirmed',
       
@@ -412,6 +459,9 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
           pincode: selectedService.category === 'postpartum_mother' ? (pincode || undefined) : undefined,
           stitchCondition: selectedService.id.startsWith('lscs-') ? (stitchCondition || undefined) : undefined,
           focusArea: selectedService.category === 'consultation' ? (focusArea || undefined) : undefined,
+          latitude: latitude || undefined,
+          longitude: longitude || undefined,
+          googleMapsUrl: googleMapsUrl || undefined,
         },
         status: 'Confirmed',
         
@@ -973,6 +1023,117 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
                         placeholder={language === 'en' ? "Flat No, Building Name, Street, Landmark..." : "मकान नंबर, बिल्डिंग का नाम, गली, मुख्य मील का पत्थर..."}
                         className="w-full rounded-xl border border-stone-200 bg-white py-2.5 px-4 text-xs font-medium focus:border-emerald-800 focus:outline-hidden"
                       />
+                    </div>
+
+                    {/* Interactive Google Map Pinning */}
+                    <div className="space-y-2 mt-3 pt-3 border-t border-stone-200/50">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">
+                          📍 {language === 'en' ? 'Pin Draggable GPS Location' : 'जीपीएस लोकेशन मैप पिन करें'}
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (navigator.geolocation) {
+                              navigator.geolocation.getCurrentPosition(
+                                (pos) => {
+                                  const lat = pos.coords.latitude;
+                                  const lng = pos.coords.longitude;
+                                  setLatitude(lat);
+                                  setLongitude(lng);
+                                  setMapCenter({ lat, lng });
+                                  setGoogleMapsUrl(`https://www.google.com/maps?q=${lat},${lng}`);
+                                },
+                                (err) => {
+                                  console.error("Browser geolocation blocked or unavailable:", err);
+                                  // Quietly ignore or fall back
+                                }
+                              );
+                            }
+                          }}
+                          className="text-[10px] font-bold text-emerald-800 hover:text-emerald-950 bg-emerald-50 hover:bg-emerald-100/80 px-2 py-1 rounded-md transition cursor-pointer flex items-center gap-1"
+                        >
+                          🎯 {language === 'en' ? 'Use Device GPS' : 'डिवाइस जीपीएस उपयोग करें'}
+                        </button>
+                      </div>
+
+                      {hasValidKey ? (
+                        <div className="rounded-2xl overflow-hidden border border-stone-200 relative">
+                          <APIProvider apiKey={API_KEY} version="weekly">
+                            <Map
+                              center={mapCenter}
+                              zoom={mapZoom}
+                              onCenterChanged={(ev) => setMapCenter(ev.detail.center)}
+                              onZoomChanged={(ev) => setMapZoom(ev.detail.zoom)}
+                              mapId="DEMO_MAP_ID"
+                              internalUsageAttributionIds={['gmp_mcp_codeassist_v1_aistudio']}
+                              style={{ width: '100%', height: '180px' }}
+                              onClick={(e) => {
+                                if (e.detail && e.detail.latLng) {
+                                  const coords = e.detail.latLng;
+                                  setLatitude(coords.lat);
+                                  setLongitude(coords.lng);
+                                  setGoogleMapsUrl(`https://www.google.com/maps?q=${coords.lat},${coords.lng}`);
+                                } else if ((e as any).latLng) {
+                                  const lat = typeof (e as any).latLng.lat === 'function' ? (e as any).latLng.lat() : (e as any).latLng.lat;
+                                  const lng = typeof (e as any).latLng.lng === 'function' ? (e as any).latLng.lng() : (e as any).latLng.lng;
+                                  setLatitude(lat);
+                                  setLongitude(lng);
+                                  setGoogleMapsUrl(`https://www.google.com/maps?q=${lat},${lng}`);
+                                }
+                              }}
+                            >
+                              {latitude !== null && longitude !== null && (
+                                <AdvancedMarker
+                                  position={{ lat: latitude, lng: longitude }}
+                                  draggable={true}
+                                  onDragEnd={(e) => {
+                                    if (e.latLng) {
+                                      const lat = typeof e.latLng.lat === 'function' ? e.latLng.lat() : e.latLng.lat;
+                                      const lng = typeof e.latLng.lng === 'function' ? e.latLng.lng() : e.latLng.lng;
+                                      setLatitude(lat);
+                                      setLongitude(lng);
+                                      setGoogleMapsUrl(`https://www.google.com/maps?q=${lat},${lng}`);
+                                    }
+                                  }}
+                                >
+                                  <Pin background="#047857" borderColor="#065f46" glyphColor="#fff" />
+                                </AdvancedMarker>
+                              )}
+                            </Map>
+                          </APIProvider>
+                          <div className="absolute bottom-2 left-2 right-2 bg-stone-900/85 backdrop-blur-xs text-stone-50 text-[9px] py-1 px-2 rounded-lg font-mono flex items-center justify-between">
+                            <span>{language === 'en' ? '⚠️ Click Map or drag pin to adjust your exact house address' : '⚠️ सटीक पते के लिए मैप पर क्लिक करें या पिन खींचें'}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="bg-stone-50 border border-dashed border-stone-200 rounded-2xl p-3.5 text-center space-y-2">
+                          <p className="text-[11px] text-stone-600">
+                            {language === 'en'
+                              ? "Setup an interactive Google Map to pin your exact house on the therapist’s map."
+                              : "थेरेपिस्ट के मानचित्र पर अपने सटीक घर को पिन करने के लिए गूगल मैप सक्रिय करें।"}
+                          </p>
+                          <div className="inline-block bg-amber-50 border border-amber-200 text-[#a16207] text-[10px] font-medium px-2.5 py-1.5 rounded-lg text-left leading-relaxed">
+                            <strong>To add your API key:</strong>
+                            <ol className="list-decimal pl-4 mt-0.5 space-y-0.5 text-[9.5px]">
+                              <li>Get an API key from Google Cloud Console</li>
+                              <li>Open <strong>Settings</strong> (⚙️ gear icon, top-right) → <strong>Secrets</strong></li>
+                              <li>Add secret: name <code>GOOGLE_MAPS_PLATFORM_KEY</code>, paste your API key as the value</li>
+                            </ol>
+                          </div>
+                        </div>
+                      )}
+
+                      {latitude !== null && longitude !== null && (
+                        <div className="bg-amber-50/40 border border-amber-100 rounded-xl p-2.5 flex items-center justify-between gap-1 text-[10.5px]">
+                          <span className="font-mono text-stone-600">
+                            Coordinates: {latitude.toFixed(6)}, {longitude.toFixed(6)}
+                          </span>
+                          <span className="text-[9.5px] bg-[#047857]/10 text-[#047857] px-2 py-0.5 rounded font-bold uppercase tracking-wide">
+                            {language === 'en' ? 'GPS Pinned' : 'मैप पिन सुरक्षित'}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Area warning check */}

@@ -52,6 +52,10 @@ export interface BookingDetails {
   pincode?: string;
   stitchCondition?: string;
   focusArea?: string;
+  googleMapsUrl?: string;
+  latitude?: number;
+  longitude?: number;
+  googlePlaceAddress?: string;
 }
 
 export interface Booking {

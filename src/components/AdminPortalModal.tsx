@@ -335,9 +335,28 @@ export default function AdminPortalModal({ onClose, onOpenBookingWizard }: Admin
                                     )}
 
                                     {booking.userDetails?.address && (
-                                      <div className="text-stone-700 bg-white border border-stone-200/65 p-2.5 rounded-lg mt-1 text-xs">
-                                        📍 <span className="font-semibold text-emerald-900">Home Visit Address (Raipur-Bhilai-Durg Area):</span>
-                                        <p className="font-semibold text-stone-900 mt-0.5">{booking.userDetails.address}, {booking.userDetails.city || 'Raipur'} {booking.userDetails.pincode ? `- ${booking.userDetails.pincode}` : ''}</p>
+                                      <div className="text-stone-700 bg-white border border-stone-200/65 p-2.5 rounded-lg mt-1 text-xs space-y-2">
+                                        <div>
+                                          📍 <span className="font-semibold text-emerald-900">Home Visit Address (Raipur-Bhilai-Durg Area):</span>
+                                          <p className="font-semibold text-stone-900 mt-0.5">{booking.userDetails.address}, {booking.userDetails.city || 'Raipur'} {booking.userDetails.pincode ? `- ${booking.userDetails.pincode}` : ''}</p>
+                                        </div>
+                                        {booking.userDetails.latitude && booking.userDetails.longitude && (
+                                          <div className="pt-2 border-t border-stone-100 flex flex-wrap items-center justify-between gap-1.5">
+                                            <span className="font-mono text-[10px] text-stone-500 bg-stone-50 px-1.5 py-0.5 rounded border border-stone-150">
+                                              Lat: {booking.userDetails.latitude.toFixed(6)}, Lng: {booking.userDetails.longitude.toFixed(6)}
+                                            </span>
+                                            {booking.userDetails.googleMapsUrl && (
+                                              <a
+                                                href={booking.userDetails.googleMapsUrl}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="inline-flex items-center gap-1.5 text-[10.5px] font-bold text-emerald-850 hover:text-emerald-950 bg-emerald-50 hover:bg-emerald-100/70 px-2.5 py-1 rounded-full border border-emerald-200/50 transition cursor-pointer"
+                                              >
+                                                🗺️ View on Google Maps
+                                              </a>
+                                            )}
+                                          </div>
+                                        )}
                                       </div>
                                     )}
 
