@@ -101,7 +101,7 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
   const [babyName, setBabyName] = useState('');
   const [babyAgeWeeks, setBabyAgeWeeks] = useState('');
   const [email, setEmail] = useState(() => userProfile?.email || user?.email || '');
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState(() => userProfile?.phone || userProfile?.phoneNumber || '');
   const [notes, setNotes] = useState('');
 
   // Custom package criteria states
@@ -177,6 +177,14 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
       setDeliveryType('none');
     }
   }, [selectedService]);
+
+  useEffect(() => {
+    if (userProfile) {
+      if (!motherName) setMotherName(userProfile.motherName || userProfile.fullName || '');
+      if (!email) setEmail(userProfile.email || '');
+      if (!phone) setPhone(userProfile.phone || userProfile.phoneNumber || '');
+    }
+  }, [userProfile]);
 
   const [validationError, setValidationError] = useState('');
   const [createdBooking, setCreatedBooking] = useState<Booking | null>(null);
@@ -942,7 +950,7 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-1.5 sm:col-span-2">
+                <div className="space-y-1.5">
                   <label className="text-xs font-bold text-stone-500 uppercase tracking-wider block">
                     {language === 'en' ? 'Email coordinates *' : 'ईमेल आईडी *'}
                   </label>
@@ -952,6 +960,19 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="mother@gmail.com"
+                    className="w-full rounded-xl border border-stone-200 bg-stone-50/40 py-2.5 px-4 text-xs font-medium focus:border-emerald-800 focus:outline-hidden"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-stone-500 uppercase tracking-wider block">
+                    {language === 'en' ? 'Active Phone/Mobile Number *' : 'सक्रिय फोन/मोबाइल नंबर *'}
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value.replace(/[^\d+ ]/g, ''))}
+                    placeholder="e.g. +91 9183216100"
                     className="w-full rounded-xl border border-stone-200 bg-stone-50/40 py-2.5 px-4 text-xs font-medium focus:border-emerald-800 focus:outline-hidden"
                   />
                 </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { useFirebase } from './FirebaseProvider';
 import { X, Calendar, User, Clock, Check, RefreshCw, XCircle, FileText, Heart, ShieldAlert } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -8,10 +8,59 @@ interface MyBookingsModalProps {
 }
 
 export default function MyBookingsModal({ onClose }: MyBookingsModalProps) {
-  const { bookings, cancelBookingInFirestore, userProfile } = useFirebase();
+  const { bookings, cancelBookingInFirestore, userProfile, updateUserProfile } = useFirebase();
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+
+  // Navigation Tab State
+  const [activeTab, setActiveTab] = useState<'bookings' | 'profile'>('bookings');
+
+  // Profile Form States
+  const [profileName, setProfileName] = useState(() => userProfile?.motherName || userProfile?.fullName || '');
+  const [profilePhone, setProfilePhone] = useState(() => userProfile?.phone || userProfile?.phoneNumber || '');
+  const [profileCity, setProfileCity] = useState(() => userProfile?.city || '');
+  const [profileAddress, setProfileAddress] = useState(() => userProfile?.address || '');
+  const [profilePincode, setProfilePincode] = useState(() => userProfile?.pincode || '');
+  const [profileMapsUrl, setProfileMapsUrl] = useState(() => userProfile?.googleMapsUrl || '');
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  useEffect(() => {
+    if (userProfile) {
+      setProfileName(userProfile.motherName || userProfile.fullName || '');
+      setProfilePhone(userProfile.phone || userProfile.phoneNumber || '');
+      setProfileCity(userProfile.city || '');
+      setProfileAddress(userProfile.address || '');
+      setProfilePincode(userProfile.pincode || '');
+      setProfileMapsUrl(userProfile.googleMapsUrl || '');
+    }
+  }, [userProfile]);
+
+  const handleSaveProfile = async (e: FormEvent) => {
+    e.preventDefault();
+    setLocalError(null);
+    setSaveSuccess(false);
+    setIsSaving(true);
+    try {
+      await updateUserProfile({
+        motherName: profileName,
+        fullName: profileName,
+        phone: profilePhone,
+        phoneNumber: profilePhone,
+        city: profileCity,
+        address: profileAddress,
+        pincode: profilePincode,
+        googleMapsUrl: profileMapsUrl
+      });
+      setSaveSuccess(true);
+    } catch (err: any) {
+      console.error(err);
+      setLocalError(err?.message || 'Failed to update profile details.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleCancelClick = async (bookingId: string) => {
     setLocalError(null);
@@ -62,6 +111,34 @@ export default function MyBookingsModal({ onClose }: MyBookingsModalProps) {
         {/* Modal Body */}
         <div className="p-6 overflow-y-auto flex-1 space-y-4">
           
+          {/* Navigation Tab Bar */}
+          <div className="flex border border-stone-200 bg-stone-50/50 p-1 rounded-2xl gap-1">
+            <button
+              type="button"
+              onClick={() => { setActiveTab('bookings'); setSaveSuccess(false); }}
+              className={`flex-1 flex items-center justify-center space-x-2 py-2 px-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
+                activeTab === 'bookings'
+                  ? 'bg-white text-emerald-900 shadow-xs border border-stone-150'
+                  : 'text-stone-500 hover:text-stone-800 hover:bg-stone-100/60'
+              }`}
+            >
+              <Calendar className="h-4 w-4 shrink-0 text-emerald-800" />
+              <span>My Appointments</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('profile')}
+              className={`flex-1 flex items-center justify-center space-x-2 py-2 px-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
+                activeTab === 'profile'
+                  ? 'bg-white text-emerald-900 shadow-xs border border-stone-150'
+                  : 'text-stone-500 hover:text-stone-800 hover:bg-stone-100/60'
+              }`}
+            >
+              <User className="h-4 w-4 shrink-0 text-emerald-850" />
+              <span>My Profile Details</span>
+            </button>
+          </div>
+
           {localError && (
             <div className="bg-rose-50 border border-rose-200 p-3 rounded-xl text-stone-800 text-xs flex items-center gap-2">
               <ShieldAlert className="h-4.5 w-4.5 text-rose-700 shrink-0" />
@@ -69,7 +146,134 @@ export default function MyBookingsModal({ onClose }: MyBookingsModalProps) {
             </div>
           )}
 
-          {bookings.length === 0 ? (
+          {activeTab === 'profile' ? (
+            <form onSubmit={handleSaveProfile} className="space-y-4" id="profile-edit-form">
+              <div className="space-y-1">
+                <h4 className="font-serif text-sm font-bold text-stone-900">
+                  Personal Profile Details
+                </h4>
+                <p className="text-xs text-stone-550 font-sans leading-relaxed">
+                  Keep your maternal coordinates updated below. This ensures seamless automatic therapist dispatches and coordinates valid communication.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-stone-500 uppercase tracking-widest block">
+                    Mother's Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={profileName}
+                    onChange={(e) => setProfileName(e.target.value)}
+                    placeholder="e.g. Kavitha Sharma"
+                    className="w-full rounded-xl border border-stone-200 bg-stone-50/40 py-2.5 px-4 text-xs font-medium focus:border-emerald-800 focus:outline-hidden"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-stone-500 uppercase tracking-widest block">
+                    Mobile/Phone Number *
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    value={profilePhone}
+                    onChange={(e) => setProfilePhone(e.target.value.replace(/[^\d+ ]/g, ''))}
+                    placeholder="e.g. +91 9999999999"
+                    className="w-full rounded-xl border border-stone-200 bg-stone-50/40 py-2.5 px-4 text-xs font-medium focus:border-emerald-800 focus:outline-hidden"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-stone-500 uppercase tracking-widest block">
+                    Raipur Metro City *
+                  </label>
+                  <select
+                    required
+                    value={profileCity}
+                    onChange={(e) => setProfileCity(e.target.value)}
+                    className="w-full rounded-xl border border-stone-200 bg-white py-2.5 px-3 text-xs font-medium focus:border-emerald-800 focus:outline-hidden"
+                  >
+                    <option value="">-- Choose Metro City --</option>
+                    <option value="Raipur">Raipur (रायपुर)</option>
+                    <option value="Bhilai">Bhilai (भिलाई)</option>
+                    <option value="Durg">Durg (दुर्ग)</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-stone-500 uppercase tracking-widest block">
+                    Pincode
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    placeholder="e.g. 492001"
+                    value={profilePincode}
+                    onChange={(e) => setProfilePincode(e.target.value.replace(/\D/g, ''))}
+                    className="w-full rounded-xl border border-stone-200 bg-stone-50/40 py-2.5 px-4 text-xs font-medium focus:border-emerald-800 focus:outline-hidden font-mono text-[11px]"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-stone-500 uppercase tracking-widest block">
+                  Complete Street Address (Home Visit Location) *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={profileAddress}
+                  onChange={(e) => setProfileAddress(e.target.value)}
+                  placeholder="Flat/House No, Building Name, Street / Landmark..."
+                  className="w-full rounded-xl border border-stone-200 bg-stone-50/40 py-2.5 px-4 text-xs font-medium focus:border-emerald-800 focus:outline-hidden"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-stone-500 uppercase tracking-widest block">
+                  Google Maps Link / URL (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={profileMapsUrl}
+                  onChange={(e) => setProfileMapsUrl(e.target.value)}
+                  placeholder="https://maps.app.goo.gl/... or google maps lat,lng info"
+                  className="w-full rounded-xl border border-stone-200 bg-stone-50/40 py-2.5 px-4 text-[11px] font-medium focus:border-emerald-800 focus:outline-hidden font-mono"
+                />
+              </div>
+
+              {saveSuccess && (
+                <div className="bg-emerald-50 border border-emerald-200 p-3.5 rounded-xl text-emerald-800 text-xs flex items-center gap-2 animate-fadeIn">
+                  <Check className="h-4.5 w-4.5 text-emerald-700 shrink-0" />
+                  <span>Profile coordinates modified and saved successfully in Firestore!</span>
+                </div>
+              )}
+
+              <div className="pt-2 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="bg-emerald-800 hover:bg-emerald-900 text-white font-bold font-sans text-xs uppercase tracking-wider px-5 py-2.5 rounded-xl transition cursor-pointer disabled:opacity-50 flex items-center space-x-2"
+                >
+                  {isSaving ? (
+                    <>
+                      <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                      <span>Saving Parameters...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="h-3.5 w-3.5" />
+                      <span>Save Profile Details</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          ) : bookings.length === 0 ? (
             <div className="text-center py-12 px-4 space-y-4" id="bookings-empty-state">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-stone-100 text-stone-400">
                 <Calendar className="h-7 w-7" />

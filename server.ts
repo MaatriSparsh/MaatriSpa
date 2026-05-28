@@ -49,8 +49,14 @@ async function startServer() {
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`[Server API] Resend returned external failure: ${errorText}`);
+        let errorText = await response.text();
+        // Handle Cloudflare and Resend HTML error boundaries elegantly
+        if (errorText.toLowerCase().includes("<html") || errorText.toLowerCase().includes("<!doctype")) {
+          const titleMatch = errorText.match(/<title>([\s\S]*?)<\/title>/i);
+          const titleSummary = titleMatch ? titleMatch[1].trim() : "Web server returned an unknown error (Cloudflare 520)";
+          errorText = `Resend Gateway issue (${titleSummary}). Please verify your Resend key status or credentials.`;
+        }
+        console.error(`[Server API] Resend returned external failure: ${errorText.substring(0, 300)}`);
         return res.status(response.status).json({
           error: `Resend API failed with status ${response.status}: ${errorText}`
         });

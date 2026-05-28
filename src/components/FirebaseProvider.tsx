@@ -672,7 +672,13 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
           role: isAdminEmail ? 'admin' : (data.role || 'client'),
           createdAt: data.createdAt,
           lastLogin: new Date().toISOString(),
-          isVerified: isAdminEmail ? true : (data.isVerified === true)
+          isVerified: isAdminEmail ? true : (data.isVerified === true),
+          city: data.city || '',
+          address: data.address || '',
+          pincode: data.pincode || '',
+          latitude: data.latitude !== undefined ? data.latitude : null,
+          longitude: data.longitude !== undefined ? data.longitude : null,
+          googleMapsUrl: data.googleMapsUrl || ''
         });
       } else {
         const emailStr = firebaseUser.email || `${firebaseUser.uid}@maatrisparsh.com`;
