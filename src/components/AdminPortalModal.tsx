@@ -1,7 +1,15 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useFirebase } from './FirebaseProvider';
 import { X, Calendar, User, Clock, FileText, Heart, ShieldAlert, Check, Edit2, CheckCircle2, MessageSquare, Mail, Users, Smartphone } from 'lucide-react';
 import { Booking } from '../types';
+import { APIProvider, Map, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
+
+const API_KEY =
+  process.env.GOOGLE_MAPS_PLATFORM_KEY ||
+  (import.meta as any).env?.VITE_GOOGLE_MAPS_PLATFORM_KEY ||
+  (globalThis as any).GOOGLE_MAPS_PLATFORM_KEY ||
+  '';
+const hasValidKey = Boolean(API_KEY) && API_KEY !== 'YOUR_API_KEY';
 
 interface AdminPortalModalProps {
   onClose: () => void;
@@ -13,6 +21,17 @@ export default function AdminPortalModal({ onClose, onOpenBookingWizard }: Admin
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [isMapAuthFailed, setIsMapAuthFailed] = useState(() => (window as any).GOOGLE_MAPS_AUTH_FAILED || false);
+
+  useEffect(() => {
+    const handleAuthFailure = () => {
+      setIsMapAuthFailed(true);
+    };
+    window.addEventListener('google-maps-auth-failed', handleAuthFailure);
+    return () => {
+      window.removeEventListener('google-maps-auth-failed', handleAuthFailure);
+    };
+  }, []);
 
   // Tab State
   const [activeTab, setActiveTab ] = useState<'bookings' | 'logs' | 'users'>('bookings');
@@ -308,7 +327,7 @@ export default function AdminPortalModal({ onClose, onOpenBookingWizard }: Admin
                                   <FileText className="h-3.5 w-3.5 text-stone-400" />
                                   <span className="truncate">Email Alerts: {booking.userDetails?.email || booking.email}</span>
                                 </div>
-                                {(booking.userDetails?.babyName || booking.userDetails?.deliveryType || booking.userDetails?.address || booking.userDetails?.focusArea || booking.userDetails?.notes) && (
+                                {(booking.userDetails?.babyName || booking.userDetails?.deliveryType || booking.userDetails?.address || booking.userDetails?.focusArea || booking.userDetails?.notes || booking.userDetails?.latitude) && (
                                   <div className="col-span-full bg-stone-50 border border-stone-150 rounded-xl p-3 mt-2 leading-relaxed space-y-1.5 min-w-[280px]">
                                     {booking.userDetails?.babyName && (
                                       <div className="text-stone-800">
@@ -335,28 +354,109 @@ export default function AdminPortalModal({ onClose, onOpenBookingWizard }: Admin
                                     )}
 
                                     {booking.userDetails?.address && (
-                                      <div className="text-stone-700 bg-white border border-stone-200/65 p-2.5 rounded-lg mt-1 text-xs space-y-2">
+                                      <div className="text-stone-700 bg-white border border-stone-200/65 p-2.5 rounded-lg mt-1 text-xs">
                                         <div>
                                           📍 <span className="font-semibold text-emerald-900">Home Visit Address (Raipur-Bhilai-Durg Area):</span>
                                           <p className="font-semibold text-stone-900 mt-0.5">{booking.userDetails.address}, {booking.userDetails.city || 'Raipur'} {booking.userDetails.pincode ? `- ${booking.userDetails.pincode}` : ''}</p>
                                         </div>
-                                        {booking.userDetails.latitude && booking.userDetails.longitude && (
-                                          <div className="pt-2 border-t border-stone-100 flex flex-wrap items-center justify-between gap-1.5">
-                                            <span className="font-mono text-[10px] text-stone-500 bg-stone-50 px-1.5 py-0.5 rounded border border-stone-150">
-                                              Lat: {booking.userDetails.latitude.toFixed(6)}, Lng: {booking.userDetails.longitude.toFixed(6)}
-                                            </span>
-                                            {booking.userDetails.googleMapsUrl && (
-                                              <a
-                                                href={booking.userDetails.googleMapsUrl}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="inline-flex items-center gap-1.5 text-[10.5px] font-bold text-emerald-850 hover:text-emerald-950 bg-emerald-50 hover:bg-emerald-100/70 px-2.5 py-1 rounded-full border border-emerald-200/50 transition cursor-pointer"
-                                              >
-                                                🗺️ View on Google Maps
-                                              </a>
+                                      </div>
+                                    )}
+
+                                    {booking.userDetails?.latitude && booking.userDetails?.longitude && (
+                                      <div className="text-stone-700 bg-white border border-stone-200/65 p-2.5 rounded-lg mt-1 text-xs space-y-2">
+                                          <div className="pt-2 border-t border-stone-100 space-y-2">
+                                            <div className="flex flex-wrap items-center justify-between gap-1.5">
+                                              {booking.userDetails.googleMapsUrl ? (
+                                                <a
+                                                  href={booking.userDetails.googleMapsUrl}
+                                                  target="_blank"
+                                                  rel="noreferrer"
+                                                  title="Click to view on Google Maps"
+                                                  className="font-mono text-[10px] text-emerald-800 bg-emerald-50 hover:bg-emerald-100/70 px-1.5 py-0.5 rounded border border-emerald-150 transition cursor-pointer flex items-center gap-1 font-semibold"
+                                                >
+                                                  📍 Lat: {booking.userDetails.latitude.toFixed(6)}, Lng: {booking.userDetails.longitude.toFixed(6)}
+                                                </a>
+                                              ) : (
+                                                <span className="font-mono text-[10px] text-stone-500 bg-stone-50 px-1.5 py-0.5 rounded border border-stone-150">
+                                                  Lat: {booking.userDetails.latitude.toFixed(6)}, Lng: {booking.userDetails.longitude.toFixed(6)}
+                                                </span>
+                                              )}
+                                              {booking.userDetails.googleMapsUrl && (
+                                                <a
+                                                  href={booking.userDetails.googleMapsUrl}
+                                                  target="_blank"
+                                                  rel="noreferrer"
+                                                  className="inline-flex items-center gap-1.5 text-[10.5px] font-bold text-emerald-850 hover:text-emerald-950 bg-emerald-50 hover:bg-emerald-100/70 px-2.5 py-1 rounded-full border border-emerald-200/50 transition cursor-pointer"
+                                                >
+                                                  🗺️ View on Google Maps ↗
+                                                </a>
+                                              )}
+                                            </div>
+
+                                            {hasValidKey && !isMapAuthFailed ? (
+                                              <div className="rounded-xl overflow-hidden border border-stone-200 h-[140px] relative mt-1.5 shadow-inner group">
+                                                {booking.userDetails.googleMapsUrl && (
+                                                  <a
+                                                    href={booking.userDetails.googleMapsUrl}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="absolute top-2 right-2 z-10 bg-white/95 hover:bg-white text-stone-900 border border-stone-200 shadow-md px-2.5 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1.5 transition-all hover:scale-105 cursor-pointer active:scale-95"
+                                                  >
+                                                    🗺️ Click Map to Open ↗
+                                                  </a>
+                                                )}
+                                                <APIProvider apiKey={API_KEY} version="weekly">
+                                                  <Map
+                                                    defaultCenter={{ lat: booking.userDetails.latitude, lng: booking.userDetails.longitude }}
+                                                    defaultZoom={15}
+                                                    mapId={`map-${booking.id}`}
+                                                    gestureHandling="cooperative"
+                                                    style={{ width: '100%', height: '100%' }}
+                                                    internalUsageAttributionIds={['gmp_mcp_codeassist_v1_aistudio']}
+                                                    onClick={() => {
+                                                      if (booking.userDetails.googleMapsUrl) {
+                                                        window.open(booking.userDetails.googleMapsUrl, '_blank', 'noopener,noreferrer');
+                                                      }
+                                                    }}
+                                                  >
+                                                    <AdvancedMarker
+                                                      position={{ lat: booking.userDetails.latitude, lng: booking.userDetails.longitude }}
+                                                      title={`${booking.userDetails.motherName || booking.customerName || 'Mother'}'s Location`}
+                                                      onClick={() => {
+                                                        if (booking.userDetails.googleMapsUrl) {
+                                                          window.open(booking.userDetails.googleMapsUrl, '_blank', 'noopener,noreferrer');
+                                                        }
+                                                      }}
+                                                    >
+                                                      <Pin background="#047857" borderColor="#065f46" glyphColor="#fff" />
+                                                    </AdvancedMarker>
+                                                  </Map>
+                                                </APIProvider>
+                                              </div>
+                                            ) : (
+                                              <div className="text-[10.5px] bg-amber-50/50 border border-amber-200/60 rounded-xl p-3 text-center text-stone-700 mt-1.5 space-y-1.5">
+                                                <div className="font-semibold text-amber-900 text-xs flex items-center justify-center gap-1">
+                                                  <span>⚠️</span>
+                                                  <span>{isMapAuthFailed ? 'Map Restricted: Billing required' : 'Interactive Map Disabled'}</span>
+                                                </div>
+                                                <p className="text-[9.5px] text-stone-500 leading-normal max-w-xs mx-auto">
+                                                  {isMapAuthFailed 
+                                                    ? 'The loaded API key has billing restrictions (BillingNotEnabledMapError). Coordinate records are securely saved.'
+                                                    : 'Interactive map requires GOOGLE_MAPS_PLATFORM_KEY to be configured in development settings.'}
+                                                </p>
+                                                {booking.userDetails.googleMapsUrl && (
+                                                  <a
+                                                    href={booking.userDetails.googleMapsUrl}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="inline-flex items-center gap-1 font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded text-[9.5px] border border-emerald-100 transition cursor-pointer"
+                                                  >
+                                                    🗺️ Launch Native Maps Direction ↗
+                                                  </a>
+                                                )}
+                                              </div>
                                             )}
                                           </div>
-                                        )}
                                       </div>
                                     )}
 
@@ -506,6 +606,67 @@ export default function AdminPortalModal({ onClose, onOpenBookingWizard }: Admin
                                   {usr.phone}
                                   <span className="text-[9px] text-emerald-700 bg-emerald-50 px-1 py-[1px] rounded font-sans scale-90 border border-emerald-100">WhatsApp 💬</span>
                                 </a>
+                              </div>
+                            )}
+
+                            {usr.address ? (
+                              <div className="bg-stone-50 border border-stone-200/50 rounded-xl p-2.5 mt-2 space-y-1.5 text-stone-750">
+                                <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-800 flex items-center gap-1">
+                                  📍 Pinned Home Visit Location
+                                </span>
+                                <p className="text-xs font-semibold text-stone-950">
+                                  {usr.address}, {usr.city || 'Raipur'} {usr.pincode ? `- ${usr.pincode}` : ''}
+                                </p>
+                                
+                                {usr.latitude && usr.longitude && (
+                                  <div className="pt-1.5 border-t border-stone-200/50 flex flex-col gap-1.5">
+                                    <div className="flex items-center justify-between gap-1">
+                                      <span className="font-mono text-[9px] text-stone-500">
+                                        GPS: {usr.latitude.toFixed(6)}, {usr.longitude.toFixed(6)}
+                                      </span>
+                                      {usr.googleMapsUrl && (
+                                        <a
+                                          href={usr.googleMapsUrl}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="text-[9.5px] font-[800] text-emerald-800 hover:text-emerald-950 hover:underline flex items-center gap-0.5 cursor-pointer bg-emerald-50/50 hover:bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-100/30 transition"
+                                        >
+                                          Open Maps ↗
+                                        </a>
+                                      )}
+                                    </div>
+                                    
+                                    {hasValidKey && !isMapAuthFailed ? (
+                                      <div className="h-[105px] rounded-lg overflow-hidden border border-stone-200 relative mt-1 group">
+                                        <APIProvider apiKey={API_KEY} version="weekly">
+                                          <Map
+                                            defaultCenter={{ lat: usr.latitude, lng: usr.longitude }}
+                                            defaultZoom={15}
+                                            mapId={`usr-map-${usr.uid}`}
+                                            gestureHandling="cooperative"
+                                            style={{ width: '100%', height: '100%' }}
+                                            internalUsageAttributionIds={['gmp_mcp_codeassist_v1_aistudio']}
+                                          >
+                                            <AdvancedMarker
+                                              position={{ lat: usr.latitude, lng: usr.longitude }}
+                                              title={`${usr.motherName || 'Verified Member'}'s Saved Location`}
+                                            >
+                                              <Pin background="#047857" borderColor="#065f46" glyphColor="#fff" />
+                                            </AdvancedMarker>
+                                          </Map>
+                                        </APIProvider>
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="bg-amber-50/40 border border-amber-100 rounded-xl p-2.5 mt-2 flex items-center gap-1.5 text-stone-600 text-[10.5px]">
+                                <span className="text-[11px]">📍</span>
+                                <div>
+                                  <span className="font-bold text-amber-900 block leading-tight">No location pinned yet</span>
+                                  <span className="text-[9.5px] text-stone-400 font-medium block">GPS coordinates are saved automatically when this client locks in a booking.</span>
+                                </div>
                               </div>
                             )}
 

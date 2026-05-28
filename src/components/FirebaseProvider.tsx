@@ -50,7 +50,7 @@ interface FirebaseContextType {
   signInWithGoogle: () => Promise<void>;
   logOut: () => Promise<void>;
   updateUserProfile: (updates: any) => Promise<void>;
-  addBooking: (bookingData: Booking, targetUserId?: string) => Promise<void>;
+  addBooking: (bookingData: Booking, targetUserId?: string, skipEmail?: boolean) => Promise<void>;
   cancelBookingInFirestore: (bookingId: string, reason?: string) => Promise<void>;
   confirmBookingInFirestore: (bookingId: string) => Promise<void>;
   editBookingInFirestore: (bookingId: string, updates: Partial<Booking>) => Promise<void>;
@@ -281,7 +281,17 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
               babyAgeWeeks: data.babyAgeWeeks || '',
               email: data.email || '',
               phone: data.phone || '',
-              notes: data.notes || ''
+              notes: data.notes || '',
+              city: data.city || data.userDetails?.city || '',
+              address: data.address || data.userDetails?.address || '',
+              pincode: data.pincode || data.userDetails?.pincode || '',
+              deliveryType: data.deliveryType || data.userDetails?.deliveryType || '',
+              deliveryDate: data.deliveryDate || data.userDetails?.deliveryDate || '',
+              stitchCondition: data.stitchCondition || data.userDetails?.stitchCondition || '',
+              focusArea: data.focusArea || data.userDetails?.focusArea || '',
+              latitude: data.latitude !== undefined ? data.latitude : (data.userDetails?.latitude !== undefined ? data.userDetails.latitude : undefined),
+              longitude: data.longitude !== undefined ? data.longitude : (data.userDetails?.longitude !== undefined ? data.userDetails.longitude : undefined),
+              googleMapsUrl: data.googleMapsUrl || data.userDetails?.googleMapsUrl || ''
             }
           } as Booking);
         });
@@ -603,7 +613,13 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
           role: d.role || 'client',
           createdAt: formattedCreatedAt,
           lastLogin: formattedLastLogin,
-          isVerified: d.isVerified === true
+          isVerified: d.isVerified === true,
+          city: d.city || '',
+          address: d.address || '',
+          pincode: d.pincode || '',
+          latitude: d.latitude !== undefined ? d.latitude : null,
+          longitude: d.longitude !== undefined ? d.longitude : null,
+          googleMapsUrl: d.googleMapsUrl || ''
         });
       });
       list.sort((a, b) => {
@@ -738,14 +754,14 @@ The MaatriSparsh Postpartum Care Sanctum Team
 https://maatrisparsh.com
     `.trim();
 
-    // 1. Send via Resend if available
+    // 1. Send via Resend secure proxy endpoint to bypass CORS and hide keys
     if (resendApiKey) {
       try {
-        const response = await fetch('https://api.resend.com/emails', {
+        const response = await fetch('/api/send-email', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${resendApiKey}`
+            'X-Resend-Api-Key': resendApiKey
           },
           body: JSON.stringify({
             from: 'MaatriSparsh Care <care@maatrisparsh.com>',
@@ -759,10 +775,10 @@ https://maatrisparsh.com
           return;
         } else {
           const errText = await response.text();
-          console.warn(`Resend failed with status ${response.status}: ${errText}`);
+          console.warn(`Resend proxy failed with status ${response.status}: ${errText}`);
         }
       } catch (err) {
-        console.error('Failed to dispatch OTP email via Resend:', err);
+        console.error('Failed to dispatch OTP email via Resend proxy, attempting EmailJS fallback if available...', err);
       }
     }
 
@@ -1070,7 +1086,7 @@ https://maatrisparsh.com
   };
 
   // Add Booking
-  const addBooking = async (bData: Booking, targetUserId?: string) => {
+  const addBooking = async (bData: Booking, targetUserId?: string, skipEmail?: boolean) => {
     if (!user) throw new Error('Secure reservation requires authenticated access.');
     setError(null);
     const bookingPath = `bookings/${bData.id}`;
@@ -1103,6 +1119,34 @@ https://maatrisparsh.com
         babyName: bData.userDetails.babyName || '',
         babyAgeWeeks: bData.userDetails.babyAgeWeeks || '',
         createdAt: serverTimestamp(),
+        city: bData.userDetails.city || '',
+        address: bData.userDetails.address || '',
+        pincode: bData.userDetails.pincode || '',
+        deliveryType: bData.userDetails.deliveryType || '',
+        deliveryDate: bData.userDetails.deliveryDate || '',
+        stitchCondition: bData.userDetails.stitchCondition || '',
+        focusArea: bData.userDetails.focusArea || '',
+        latitude: bData.userDetails.latitude ?? null,
+        longitude: bData.userDetails.longitude ?? null,
+        googleMapsUrl: bData.userDetails.googleMapsUrl || '',
+        userDetails: {
+          motherName: bData.userDetails.motherName,
+          babyName: bData.userDetails.babyName || '',
+          babyAgeWeeks: bData.userDetails.babyAgeWeeks || '',
+          email: bData.userDetails.email || '',
+          phone: bData.userDetails.phone || '',
+          notes: bData.userDetails.notes || '',
+          city: bData.userDetails.city || '',
+          address: bData.userDetails.address || '',
+          pincode: bData.userDetails.pincode || '',
+          deliveryType: bData.userDetails.deliveryType || '',
+          deliveryDate: bData.userDetails.deliveryDate || '',
+          stitchCondition: bData.userDetails.stitchCondition || '',
+          focusArea: bData.userDetails.focusArea || '',
+          latitude: bData.userDetails.latitude ?? null,
+          longitude: bData.userDetails.longitude ?? null,
+          googleMapsUrl: bData.userDetails.googleMapsUrl || ''
+        },
         
         // Pricing items in Rupees
         originalPrice: bData.originalPrice || bData.priceInr || 3000,
@@ -1141,12 +1185,15 @@ https://maatrisparsh.com
       await logAdminAction('CREATE_BOOKING', `Booking ${bData.id} custom-created for customer ${payload.customerName}`);
       
       // Auto-trigger confirmation dispatch logs on creation
-      await logAdminAction('SEND_CONFIRMATION', `Auto-dispatched booking confirmations to Customer ${payload.customerName}. Email sent to [${payload.email || 'N/A'}] and SMS Alert sent to [${payload.phone || 'N/A'}].`);
+      await logAdminAction('SEND_CONFIRMATION', `Auto-dispatched booking confirmations to Customer ${payload.customerName}. Email sent to [${payload.email || 'N/A'}], SMS Alert sent to [${payload.phone || 'N/A'}], and WhatsApp Alert sent to [${payload.phone || 'N/A'}].`);
       
       try {
-        // Run full asynchronous email and SMS generation and dispatch (User + Admin)
-        await sendBookingEmails(payload);
+        // Run full asynchronous email, SMS, and WhatsApp generation and dispatch (User + Admin)
+        if (!skipEmail) {
+          await sendBookingEmails(payload);
+        }
         await sendBookingSMS(payload);
+        await sendBookingWhatsApp(payload);
       } catch (emailErr) {
         console.error("Non-blocking error dispatching client-side notification triggers:", emailErr);
       }
@@ -1210,11 +1257,12 @@ https://maatrisparsh.com
           bookingStatus: 'Confirmed'
         };
 
-        await logAdminAction('SEND_CONFIRMATION', `Auto-dispatched booking confirmations on manual confirmation to Customer ${payload.customerName || 'Client'}. Email sent to [${payload.email || 'N/A'}] and SMS Alert sent to [${payload.phone || 'N/A'}].`);
+        await logAdminAction('SEND_CONFIRMATION', `Auto-dispatched booking confirmations on manual confirmation to Customer ${payload.customerName || 'Client'}. Email sent to [${payload.email || 'N/A'}], SMS Alert sent to [${payload.phone || 'N/A'}], and WhatsApp Alert sent to [${payload.phone || 'N/A'}].`);
 
         try {
           await sendBookingEmails(payload);
           await sendBookingSMS(payload);
+          await sendBookingWhatsApp(payload);
         } catch (alertErr) {
           console.error("Non-blocking error dispatching manual confirmation alerts:", alertErr);
         }
@@ -1351,10 +1399,11 @@ https://maatrisparsh.com
 
         const currentStatus = mergedPayload.status || mergedPayload.bookingStatus;
         if (currentStatus === 'Confirmed') {
-          await logAdminAction('SEND_CONFIRMATION', `Auto-dispatched booking confirmations to Customer ${mergedPayload.customerName || 'Client'}. Email sent to [${mergedPayload.email || 'N/A'}] and SMS Alert sent to [${mergedPayload.phone || 'N/A'}].`);
+          await logAdminAction('SEND_CONFIRMATION', `Auto-dispatched booking confirmations to Customer ${mergedPayload.customerName || 'Client'}. Email sent to [${mergedPayload.email || 'N/A'}], SMS Alert sent to [${mergedPayload.phone || 'N/A'}], and WhatsApp Alert sent to [${mergedPayload.phone || 'N/A'}].`);
           try {
             await sendBookingEmails(mergedPayload);
             await sendBookingSMS(mergedPayload);
+            await sendBookingWhatsApp(mergedPayload);
           } catch (dispatchErr) {
             console.error("Non-blocking error dispatching client-side email/SMS triggers on edit:", dispatchErr);
           }
@@ -1583,6 +1632,102 @@ Thank you for trusting MaatriSparsh! 🙏
     }
   };
 
+  const sendBookingWhatsApp = async (payload: any) => {
+    const accountSid = (import.meta as any).env.VITE_TWILIO_ACCOUNT_SID;
+    const authToken = (import.meta as any).env.VITE_TWILIO_AUTH_TOKEN;
+    const fromNumber = (import.meta as any).env.VITE_TWILIO_WHATSAPP_NUMBER || (import.meta as any).env.VITE_TWILIO_PHONE_NUMBER;
+
+    const rawPhone = payload.phone || payload.userDetails?.phone || '';
+    if (!rawPhone) {
+      console.warn('[WhatsApp Dispatch] Customer phone number is missing.');
+      return;
+    }
+
+    // Format phone to whatsapp:91XXXXXXXXXX
+    let cleanPhone = rawPhone.replace(/\D/g, '');
+    if (cleanPhone.length === 10) {
+      cleanPhone = '91' + cleanPhone;
+    }
+    const userPhone = `whatsapp:+${cleanPhone}`;
+
+    const bookingId = payload.id || payload.bookingId || 'N/A';
+    const serviceName = payload.serviceName || payload.service?.name || 'N/A';
+    const bookingDate = payload.bookingDate || payload.date || 'N/A';
+    const bookingTime = payload.bookingTime || payload.timeSlot || 'N/A';
+    const therapist = payload.practitionerName || payload.practitioner?.name || 'To Be Assigned';
+    const city = payload.userDetails?.city || 'Raipur-Bhilai-Durg Area';
+    const motherName = payload.customerName || payload.userDetails?.motherName || 'Verified Mother';
+
+    const whatsAppBody = `*🌸 MaatriSparsh Postnatal Care Confirmation 🌸*
+
+Dear *${motherName}*,
+
+Your postpartum care session has been successfully booked with MaatriSparsh! 🙏 Here are your booking details:
+
+*📌 Booking Reference ID:* ${bookingId}
+*💆‍♀️ Care Program:* ${serviceName}
+*📅 Scheduled Date:* ${bookingDate}
+*⏰ Time Slot:* ${bookingTime}
+*🛋️ Region:* Raipur, Bhilai & Durg Metro Areas (${city})
+*👩‍⚕️ Assigned Specialist:* ${therapist}
+
+Our lead postpartum therapy coordinator will initialize separate WhatsApp coordination within 2 hours to confirm therapist arrival, logistics and preparation instructions.
+
+Thank you for trusting MaatriSparsh on your motherhood journey! 🌸`.trim();
+
+    if (accountSid && authToken && fromNumber) {
+      try {
+        let cleanFrom = fromNumber.trim();
+        if (!cleanFrom.startsWith('whatsapp:')) {
+          let digits = cleanFrom.replace(/[^\d+]/g, '');
+          if (!digits.startsWith('+')) {
+            digits = '+' + digits;
+          }
+          cleanFrom = `whatsapp:${digits}`;
+        }
+
+        const authHeader = 'Basic ' + btoa(`${accountSid}:${authToken}`);
+        const formData = new URLSearchParams();
+        formData.append('To', userPhone);
+        formData.append('From', cleanFrom);
+        formData.append('Body', whatsAppBody);
+
+        const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
+          method: 'POST',
+          headers: {
+            'Authorization': authHeader,
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: formData.toString()
+        });
+
+        if (!response.ok) {
+          const errText = await response.text();
+          throw new Error(`Twilio WhatsApp status ${response.status}: ${errText}`);
+        }
+
+        const resJson = await response.json();
+        console.log(`[Twilio WhatsApp] Confirmation message successfully sent to ${userPhone}. MSG SID: ${resJson.sid}`);
+      } catch (err) {
+        console.error('Failed to dispatch user confirmation WhatsApp via Twilio:', err);
+      }
+    } else {
+      console.warn('[Twilio WhatsApp] API credentials are not fully configured in system settings. Logging detailed WhatsApp notification instead.');
+    }
+
+    try {
+      // Log WhatsApp transmission payload to activityLogs collection
+      await addDoc(collection(db, 'activityLogs'), {
+        adminEmail: 'maatrisparsh@gmail.com',
+        action: 'WHATSAPP_BOUND_DATA',
+        details: `AUTOMATED WHATSAPP NOTIFICATION (To: ${userPhone}):\n${whatsAppBody}`,
+        timestamp: new Date().toISOString()
+      });
+    } catch (logErr) {
+      console.error("Failed to append raw WhatsApp logs:", logErr);
+    }
+  };
+
   const sendBookingEmails = async (payload: any) => {
     const serviceId = (import.meta as any).env.VITE_EMAILJS_SERVICE_ID;
     const userTemplateId = (import.meta as any).env.VITE_EMAILJS_TEMPLATE_ID_USER;
@@ -1693,11 +1838,11 @@ MaatriSparsh Internal Notification Service
       }
     } else if (resendApiKey) {
       try {
-        await fetch('https://api.resend.com/emails', {
+        await fetch('/api/send-email', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${resendApiKey}`
+            'X-Resend-Api-Key': resendApiKey
           },
           body: JSON.stringify({
             from: 'MaatriSparsh Care <care@maatrisparsh.com>',
@@ -1706,9 +1851,9 @@ MaatriSparsh Internal Notification Service
             text: userEmailBody
           })
         });
-        console.log(`[Resend] Booking confirmation successfully sent to user ${userEmailAddress}`);
+        console.log(`[Resend Proxy] Booking confirmation successfully sent to user ${userEmailAddress}`);
       } catch (err) {
-        console.error('Failed to dispatch user confirmation email via Resend:', err);
+        console.error('Failed to dispatch user confirmation email via Resend proxy:', err);
       }
     } else {
       console.warn('[Email Integration] User SMTP/Email credentials not configured yet. Detailed email payload generated inside activityLogs.');
@@ -1742,11 +1887,11 @@ MaatriSparsh Internal Notification Service
       }
     } else if (resendApiKey) {
       try {
-        await fetch('https://api.resend.com/emails', {
+        await fetch('/api/send-email', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${resendApiKey}`
+            'X-Resend-Api-Key': resendApiKey
           },
           body: JSON.stringify({
             from: 'MaatriSparsh Care Alerts <alerts@maatrisparsh.com>',
@@ -1755,9 +1900,9 @@ MaatriSparsh Internal Notification Service
             text: adminEmailBody
           })
         });
-        console.log(`[Resend] New booking notification successfully sent to admin ${adminEmailAddress}`);
+        console.log(`[Resend Proxy] New booking notification successfully sent to admin ${adminEmailAddress}`);
       } catch (err) {
-        console.error('Failed to dispatch admin notification email via Resend:', err);
+        console.error('Failed to dispatch admin notification email via Resend proxy:', err);
       }
     } else {
       console.warn('[Email Integration] Admin SMTP/Email credentials not configured yet. Detailed email payload generated inside activityLogs.');

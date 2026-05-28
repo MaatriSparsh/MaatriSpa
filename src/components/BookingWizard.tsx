@@ -13,6 +13,39 @@ const API_KEY =
   '';
 const hasValidKey = Boolean(API_KEY) && API_KEY !== 'YOUR_API_KEY';
 
+const parseCoordinatesFromUrl = (url: string) => {
+  if (!url) return null;
+  // Patterns like q=lat,lng or place/lat,lng or @lat,lng
+  const qMatch = url.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (qMatch) {
+    return { lat: parseFloat(qMatch[1]), lng: parseFloat(qMatch[2]) };
+  }
+  const placeMatch = url.match(/\/place\/(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (placeMatch) {
+    return { lat: parseFloat(placeMatch[1]), lng: parseFloat(placeMatch[2]) };
+  }
+  const atMatch = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (atMatch) {
+    return { lat: parseFloat(atMatch[1]), lng: parseFloat(atMatch[2]) };
+  }
+  // Also support simple comma separated lat, lng
+  const rawCoordsMatch = url.match(/^(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)$/);
+  if (rawCoordsMatch) {
+    return { lat: parseFloat(rawCoordsMatch[1]), lng: parseFloat(rawCoordsMatch[2]) };
+  }
+  return null;
+};
+
+const formatWhatsAppNumber = (rawPhone: string) => {
+  if (!rawPhone) return '';
+  let clean = rawPhone.replace(/\D/g, ''); // strip all non-digits
+  if (clean.length === 10) {
+    // default India country code (+91)
+    clean = '91' + clean;
+  }
+  return clean;
+};
+
 interface BookingWizardProps {
   onClose: () => void;
   onBookingSuccess: (booking: Booking) => void;
@@ -93,6 +126,18 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
   const [googleMapsUrl, setGoogleMapsUrl] = useState<string>('');
   const [mapCenter, setMapCenter] = useState({ lat: 21.2512, lng: 81.6296 });
   const [mapZoom, setMapZoom] = useState(13);
+  const [sendEmailConfirm, setSendEmailConfirm] = useState(true);
+  const [isMapAuthFailed, setIsMapAuthFailed] = useState(() => (window as any).GOOGLE_MAPS_AUTH_FAILED || false);
+
+  useEffect(() => {
+    const handleAuthFailure = () => {
+      setIsMapAuthFailed(true);
+    };
+    window.addEventListener('google-maps-auth-failed', handleAuthFailure);
+    return () => {
+      window.removeEventListener('google-maps-auth-failed', handleAuthFailure);
+    };
+  }, []);
 
   // Automatically center map and set default pins when city changes
   useEffect(() => {
@@ -470,7 +515,7 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
         discountedPriceApplied: selectedService.priceInr,
         gstInr: Math.round(selectedService.priceInr * 0.18),
         finalPriceInr: Math.round(selectedService.priceInr * 1.18)
-      }, selectedTargetUserId || undefined);
+      }, selectedTargetUserId || undefined, !sendEmailConfirm);
 
       setCreatedBooking(bookingPayload);
       setStep('success');
@@ -910,6 +955,20 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
                     className="w-full rounded-xl border border-stone-200 bg-stone-50/40 py-2.5 px-4 text-xs font-medium focus:border-emerald-800 focus:outline-hidden"
                   />
                 </div>
+                <div className="sm:col-span-2 flex items-center space-x-2.5 bg-stone-50/60 p-3 rounded-2xl border border-stone-150/80">
+                  <input
+                    type="checkbox"
+                    id="send-email-confirm"
+                    checked={sendEmailConfirm}
+                    onChange={(e) => setSendEmailConfirm(e.target.checked)}
+                    className="h-4 w-4 text-emerald-805 border-stone-300 rounded focus:ring-emerald-800 cursor-pointer accent-emerald-800"
+                  />
+                  <label htmlFor="send-email-confirm" className="text-[11px] font-semibold text-stone-750 select-none cursor-pointer leading-tight">
+                    {language === 'en' 
+                      ? '📧 Send a beautifully styled session confirmation receipt to this email address automatically' 
+                      : '📧 इस ईमेल पते पर स्वचालित रूप से सत्र पुष्टीकरण रसीद भेजें'}
+                  </label>
+                </div>
               </div>
 
               {/* --- DYNAMIC PACKAGE-SPECIFIC CRITERIA SECTION --- */}
@@ -1025,6 +1084,46 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
                       />
                     </div>
 
+                    {/* Google Maps Link / Coordinates Entry block */}
+                    <div className="space-y-1.5 mt-3">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-stone-500 uppercase tracking-wider block">
+                          📍 {language === 'en' ? 'Google Maps Link / URL (Optional)' : 'गूगल मैप्स लिंक / यूआरएल (वैकल्पिक)'}
+                        </label>
+                        {googleMapsUrl && googleMapsUrl.startsWith('http') && (
+                          <a
+                            href={googleMapsUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded transition cursor-pointer text-[9.5px]"
+                          >
+                            🗺️ {language === 'en' ? 'Click to Test Map Link' : 'नक्शा लिंक जांचें'}
+                          </a>
+                        )}
+                      </div>
+                      <input
+                        type="text"
+                        value={googleMapsUrl}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setGoogleMapsUrl(val);
+                          const parsed = parseCoordinatesFromUrl(val);
+                          if (parsed) {
+                            setLatitude(parsed.lat);
+                            setLongitude(parsed.lng);
+                            setMapCenter(parsed);
+                          }
+                        }}
+                        placeholder={language === 'en' ? "https://maps.app.goo.gl/... or latitude,longitude" : "https://maps.app.goo.gl/... या अक्षांश,देशांतर"}
+                        className="w-full rounded-xl border border-stone-200 bg-white py-2.5 px-4 text-xs font-medium focus:border-emerald-800 focus:outline-hidden font-mono text-[11px]"
+                      />
+                      <p className="text-[10px] text-stone-500 leading-normal">
+                        {language === 'en' 
+                          ? "Paste index share map URL or custom coordinates (e.g., 21.2512,81.6296) to align the therapist dispatch." 
+                          : "थेरेपिस्ट प्रेषण को संरेखित करने के लिए अपना साझा मैप यूआरएल या कस्टम निर्देशांक (जैसे, 21.2512, 81.6296) पेस्ट करें।"}
+                      </p>
+                    </div>
+
                     {/* Interactive Google Map Pinning */}
                     <div className="space-y-2 mt-3 pt-3 border-t border-stone-200/50">
                       <div className="flex items-center justify-between">
@@ -1057,7 +1156,7 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
                         </button>
                       </div>
 
-                      {hasValidKey ? (
+                      {hasValidKey && !isMapAuthFailed ? (
                         <div className="rounded-2xl overflow-hidden border border-stone-200 relative">
                           <APIProvider apiKey={API_KEY} version="weekly">
                             <Map
@@ -1107,20 +1206,33 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
                           </div>
                         </div>
                       ) : (
-                        <div className="bg-stone-50 border border-dashed border-stone-200 rounded-2xl p-3.5 text-center space-y-2">
-                          <p className="text-[11px] text-stone-600">
-                            {language === 'en'
-                              ? "Setup an interactive Google Map to pin your exact house on the therapist’s map."
-                              : "थेरेपिस्ट के मानचित्र पर अपने सटीक घर को पिन करने के लिए गूगल मैप सक्रिय करें।"}
+                        <div className="bg-stone-50 border border-dashed border-amber-200 rounded-2xl p-4 text-center space-y-2.5">
+                          <p className="text-[11px] text-stone-605 max-w-sm mx-auto leading-relaxed">
+                            {isMapAuthFailed 
+                              ? (language === 'en' 
+                                  ? "⚠️ Interactive Map service is currently restricted due to billing constraints on the Google Maps custom API Key (BillingNotEnabledMapError). Rest assured, your coordinate inputs are saved perfectly." 
+                                  : "⚠️ गूगल मैप्स कस्टम एपीआई की पर बिलिंग सीमा के कारण इंटरैक्टिव मैप सेवा अस्थायी रूप से अनुपलब्ध है (BillingNotEnabledMapError)। आश्वस्त रहें, आपके निर्देशांक सही ढंग से सहेजे गए हैं।")
+                              : (language === 'en'
+                                  ? "Setup an interactive Google Map to pin your exact house on the therapist’s map."
+                                  : "थेरेपिस्ट के मानचित्र पर अपने सटीक घर को पिन करने के लिए गूगल मैप सक्रिय करें।")}
                           </p>
-                          <div className="inline-block bg-amber-50 border border-amber-200 text-[#a16207] text-[10px] font-medium px-2.5 py-1.5 rounded-lg text-left leading-relaxed">
-                            <strong>To add your API key:</strong>
-                            <ol className="list-decimal pl-4 mt-0.5 space-y-0.5 text-[9.5px]">
-                              <li>Get an API key from Google Cloud Console</li>
-                              <li>Open <strong>Settings</strong> (⚙️ gear icon, top-right) → <strong>Secrets</strong></li>
-                              <li>Add secret: name <code>GOOGLE_MAPS_PLATFORM_KEY</code>, paste your API key as the value</li>
-                            </ol>
-                          </div>
+                          {isMapAuthFailed ? (
+                            <div className="text-[10px] bg-amber-50 text-amber-900 px-3 py-2 rounded-xl border border-amber-100 text-left space-y-1">
+                              <strong>How to resolve this as administrator:</strong>
+                              <p className="leading-normal">
+                                Link a valid Google Cloud Billing Account to your API project in Google Developer Console to restore live geospatial rendering overlays immediately.
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="inline-block bg-amber-50 border border-amber-200 text-[#a16207] text-[10px] font-medium px-2.5 py-1.5 rounded-lg text-left leading-relaxed">
+                              <strong>To add your API key:</strong>
+                              <ol className="list-decimal pl-4 mt-0.5 space-y-0.5 text-[9.5px]">
+                                <li>Get an API key from Google Cloud Console</li>
+                                <li>Open <strong>Settings</strong> (⚙️ gear icon, top-right) → <strong>Secrets</strong></li>
+                                <li>Add secret: name <code>GOOGLE_MAPS_PLATFORM_KEY</code>, paste your API key as the value</li>
+                              </ol>
+                            </div>
+                          )}
                         </div>
                       )}
 
@@ -1285,20 +1397,20 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
                     <span className="block text-stone-400 font-mono uppercase tracking-widest text-[9px]">
                       {language === 'en' ? 'Mother Name' : 'माता का नाम'}
                     </span>
-                    <span className="font-bold text-stone-800 text-xs">{createdBooking.userDetails.motherName}</span>
+                    <span className="font-bold text-stone-800 text-xs">{createdBooking.userDetails?.motherName}</span>
                   </div>
                   <div>
                     <span className="block text-stone-400 font-mono uppercase tracking-widest text-[9px]">
                       {language === 'en' ? 'Baby Name' : 'शिशु का नाम'}
                     </span>
-                    <span className="font-bold text-stone-800 text-xs">{createdBooking.userDetails.babyName || (language === 'en' ? 'Not Born' : 'शीघ्र ही')}</span>
+                    <span className="font-bold text-stone-800 text-xs">{createdBooking.userDetails?.babyName || (language === 'en' ? 'Not Born' : 'शीघ्र ही')}</span>
                   </div>
                   <div className="col-span-2">
                     <span className="block text-stone-400 font-mono uppercase tracking-widest text-[9px]">
                       {language === 'en' ? 'Care Treatment Program' : 'उपचार सत्र पैकेज'}
                     </span>
                     <span className="font-bold text-stone-800 text-xs">
-                      {language === 'en' ? createdBooking.service.name : createdBooking.service.nameHindi}
+                      {language === 'en' ? (createdBooking.serviceName || createdBooking.service?.name) : (createdBooking.service?.nameHindi || createdBooking.serviceName)}
                     </span>
                   </div>
                   <div>
@@ -1320,10 +1432,78 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
                     {language === 'en' ? 'Net Consultation Fee:' : 'कुल परामर्श शुल्क:'}
                   </span>
                   <span className="font-serif font-black text-lg text-emerald-850 bg-white/70 px-2.5 py-1 rounded border border-stone-200/50">
-                    ₹{createdBooking.service.priceInr.toLocaleString('en-IN')}
+                    ₹{(createdBooking.service?.priceInr || selectedService?.priceInr || 0).toLocaleString('en-IN')}
                   </span>
                 </div>
               </div>
+
+              {/* Direct WhatsApp Confirmation Receipt Dispatch */}
+              <div className="bg-[#e8f5e9]/70 border border-[#c8e6c9] rounded-2xl p-4 space-y-2.5 text-left text-xs text-stone-750 max-w-md mx-auto">
+                <span className="font-semibold text-emerald-950 flex items-center gap-1.5 font-sans">
+                  <svg className="h-4.5 w-4.5 text-[#25d366] fill-currentColor" viewBox="0 0 24 24">
+                    <path fillRule="evenodd" clipRule="evenodd" d="M12.004 0C5.378 0 .002 5.376.002 12c0 2.112.551 4.17 1.597 5.979L.002 24l6.195-1.623c1.737.947 3.693 1.447 5.807 1.447 6.623 0 11.996-5.377 11.996-12S18.627 0 12.004 0zm0 21.993c-1.897 0-3.754-.51-5.385-1.472l-.386-.23-3.664.96.977-3.57-.253-.401a9.923 9.923 0 0 1-1.523-5.28c0-5.467 4.453-9.919 9.92-9.919 2.651 0 5.143 1.033 7.02 2.91 1.876 1.877 2.909 4.37 2.909 7.01s-1.033 5.143-2.91 7.02c-1.876 1.876-4.37 2.911-7.008 2.911zm5.348-7.306c-.292-.146-1.729-.854-1.996-.951-.267-.098-.462-.147-.657.146-.195.293-.756.952-.927 1.147-.171.195-.341.219-.633.073-.292-.146-1.233-.454-2.348-1.45-.869-.775-1.455-1.733-1.729-2.025-.27-.293-.028-.45.118-.596.133-.131.293-.341.439-.512.146-.171.195-.293.292-.488.098-.195.049-.366-.024-.512-.073-.146-.657-1.585-.901-2.172-.238-.57-.482-.493-.659-.502-.17-.008-.365-.008-.56-.008s-.512.073-.78.366c-.267.293-1.023.999-1.023 2.437s1.048 2.827 1.194 3.022c.146.195 2.062 3.15 4.996 4.413.984.423 1.776.626 2.392.821.987.313 1.887.269 2.597.163.791-.118 1.729-.708 1.973-1.356.244-.648.244-1.204.171-1.32-.074-.117-.269-.191-.561-.337z" fill="currentColor"/>
+                  </svg>
+                  <span className="font-semibold text-emerald-950 flex items-center gap-1.5 font-sans text-xs">
+                    {language === 'en' ? 'Get Instant WhatsApp Receipt' : 'तुरंत व्हाट्सएप (WhatsApp) विवरण साझा करें'}
+                  </span>
+                </span>
+                <p className="text-stone-605 text-[11.5px] leading-relaxed">
+                  {language === 'en' 
+                    ? <>Receive your official care reservation receipt and specialist guidelines directly on WhatsApp for secure reference.</>
+                    : <>सुरक्षित संदर्भ के लिए सीधे व्हाट्सएप पर अपनी आधिकारिक देखभाल रसीद और विशेषज्ञ दिशानिर्देश प्राप्त करें।</>}
+                </p>
+
+                <a
+                  href={`https://wa.me/${formatWhatsAppNumber(phone)}?text=${encodeURIComponent(
+                    language === 'en'
+                      ? `*🌸 Hello ${createdBooking.userDetails?.motherName || 'Verified Mother'} 🌸*\n\nYour postpartum wellness & healing session with *MaatriSparsh Care* is compiled successfully! Here is your official Care Receipt:\n\n*📌 Booking Reference ID:* ${createdBooking.id}\n*💆‍♀️ Therapy Package:* ${createdBooking.serviceName || createdBooking.service?.name}\n*📅 Session Date:* ${createdBooking.date}\n*⏰ Selected Hour:* ${createdBooking.timeSlot}\n*🛋️ Treatment Range:* Raipur & Bhilai Home Visit Specialities\n*💰 Net consultation Fee:* ₹${(createdBooking.service?.priceInr || selectedService?.priceInr || 0)} (Payable upon therapist arrival)\n\nOur leading postpartum therapy coordinator will initiate WhatsApp coordination with you within 2 hours to confirm therapist arrival, logistics and preparation instructions.\n\nWarm regards,\n_MaatriSparsh Postpartum Care Sanctum_`
+                      : `*🌸 नमस्ते ${createdBooking.userDetails?.motherName || 'Verified Mother'} 🌸*\n\n*मातृस्पर्श केयर (MaatriSparsh Care)* के साथ आपका मातृत्व कल्याण और थेरेपी सत्र सफलतापूर्वक सुरक्षित हो चुका है! आपकी रसीद नीचे दी गई है:\n\n*📌 बुकिंग आईडी:* ${createdBooking.id}\n*💆‍♀️ सेवा पैकेज:* ${createdBooking.service?.nameHindi || createdBooking.service?.name}\n*📅 अपॉइंटमेंट तिथि:* ${createdBooking.date}\n*⏰ समय स्लॉट:* ${createdBooking.timeSlot}\n*🛋️ सेवा क्षेत्र:* रायपुर और भिलाई होम विजिट\n*💰 शुल्क:* ₹${(createdBooking.service?.priceInr || selectedService?.priceInr || 0)}\n\nमातृ समन्वय विभाग से थेरेपिस्ट आगमन की तैयारी के लिए आपसे शीघ्र ही संपर्क किया जाएगा। मातृत्व कल्याण यात्रा में आपका स्वागत है।\n\nसादर,\n_मातृस्पर्श टीम_`
+                  )}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center justify-center gap-2 w-full font-bold bg-[#128c7e] hover:bg-[#075e54] text-white px-4 py-2.5 rounded-xl shadow-xs transition-all text-xs cursor-pointer text-center"
+                >
+                  <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24">
+                    <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.717-1.455L0 24zm6.09-3.957l.328.195c1.611.957 3.655 1.463 5.726 1.464 5.764 0 10.455-4.683 10.459-10.448.002-2.793-1.082-5.421-3.053-7.393C17.64 2.29 15.019 1.198 12.23 1.198c-5.776 0-10.473 4.692-10.477 10.46-.001 2.059.537 4.07 1.558 5.867l.215.378-.999 3.65 3.73-.977zm12.38-5.344c-.303-.151-1.793-.884-2.073-.984-.279-.101-.482-.151-.684.152-.201.302-.777.984-.954 1.185-.176.202-.353.226-.656.075-.303-.151-1.278-.471-2.435-1.503-.9-.802-1.507-1.793-1.793-2.095-.286-.301-.03-.464.121-.614.136-.134.303-.352.454-.528.151-.176.202-.302.302-.503.101-.201.05-.378-.025-.529-.075-.152-.684-1.65-.937-2.259-.247-.595-.5-.515-.684-.524-.176-.008-.378-.01-.58-.01s-.529.076-.807.378c-.279.302-1.062 1.037-1.062 2.529 0 1.491 1.087 2.932 1.238 3.133.151.201 2.138 3.264 5.178 4.57 1.018.437 1.838.647 2.476.85 1.022.324 1.954.278 2.689.168.819-.122 1.793-.733 2.046-1.41.252-.676.252-1.258.176-1.382-.076-.123-.279-.2-.582-.351z"/>
+                  </svg>
+                  <span>{language === 'en' ? 'Open WhatsApp Confirmation Link' : 'व्हाट्सएप चैट पर रसीद प्राप्त करें'}</span>
+                </a>
+              </div>
+
+              {/* Live Email Confirmation Status & Interactive Native Fallback Trigger */}
+              {sendEmailConfirm && (
+                <div className="bg-emerald-50/60 border border-emerald-100 rounded-2xl p-4 space-y-2.5 text-left text-xs text-stone-750 max-w-md mx-auto">
+                  <span className="font-semibold text-emerald-950 flex items-center gap-1.5 font-sans">
+                    📧 {language === 'en' ? 'Email Dispatch Active' : 'ईमेल पुष्टिकरण सक्रिय'}
+                    <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping inline-block"></span>
+                  </span>
+                  <p className="text-stone-600 text-[11px] leading-relaxed">
+                    {language === 'en' 
+                      ? <>Your booking confirmation email was initiated and scheduled for dispatch to <strong>{createdBooking.email}</strong> dynamically.</>
+                      : <>सत्र पुष्टिकरण और रसीद विवरण आपके ईमेल <strong>{createdBooking.email}</strong> पर भेजने की प्रक्रिया आरंभ कर दी गई है।</>}
+                  </p>
+                  
+                  {(!(import.meta as any).env?.VITE_RESEND_API_KEY && !(import.meta as any).env?.VITE_EMAILJS_SERVICE_ID) && (
+                    <div className="pt-2 border-t border-emerald-200/40 flex flex-col gap-2">
+                      <div className="flex items-center justify-between text-[9.5px]">
+                        <span className="text-amber-850 font-medium bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100">
+                          ⚠️ {language === 'en' ? 'SMTP or Resend API key is missing' : 'एसएमटीपी या रीसेंड एपीआई की दर्ज नहीं है'}
+                        </span>
+                      </div>
+                      <a
+                        href={`mailto:${createdBooking.email}?subject=${encodeURIComponent(`[MaatriSparsh Care] Your Postnatal Care Booking Confirmation (${createdBooking.id})`)}&body=${encodeURIComponent(
+                          `Dear ${createdBooking.userDetails?.motherName || 'Verified Mother'},\n\nWe are delighted to confirm your postnatal / postpartum therapeutic care package reservation with MaatriSparsh Care!\n\n=================== BOOKING DETAILS ===================\nBooking Reference ID: ${createdBooking.id}\nTreatment Session: ${createdBooking.serviceName || createdBooking.service?.name}\nAppointment Scheduled: ${createdBooking.date} at ${createdBooking.timeSlot}\nAssigned Associate Specialist: ${createdBooking.practitionerName || createdBooking.practitioner?.name || 'MaatriSparsh Specialist Coordinator'}\nLocation Range: Raipur, Bhilai & Durg Metro Areas\n====================================================\n\nOur head clinical postpartum care coordinator will initiate whatsapp coordination with you within 2 hours to confirm therapist arrival, logistics and preparation instructions.\n\nWarm regards,\nMaatriSparsh Postpartum Care Sanctum Team\nhttps://maatrisparsh.com\nContact: +91 9183216100`
+                        )}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center justify-center gap-1.5 font-bold bg-amber-550/10 hover:bg-amber-550/20 text-amber-950 border border-amber-200 px-3 py-1.5 rounded-xl transition-all text-[10px] cursor-pointer"
+                      >
+                        📬 {language === 'en' ? 'Send Directly via Your Email App (Gmail/Outlook)' : 'सीधे अपने ईमेल ऐप द्वारा भेजें (जीमेल/आउटलुक)'}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="pt-4 max-w-xs mx-auto">
                 <button
