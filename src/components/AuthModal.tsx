@@ -97,26 +97,6 @@ export default function AuthModal({ onClose, onSuccess, initialMode = 'signin' }
     }
   };
 
-  const handleQuickFill = () => {
-    setLocalError(null);
-    const randomId = Math.floor(1000 + Math.random() * 9000);
-    
-    if (mode === 'signin') {
-      setEmail('demo.mother@maatrisparsh.com');
-      setPassword('demo123456');
-      setLocalSuccess('Pre-filled MaatriSparsh demo account! Click Sign In to continue.');
-    } else {
-      setMotherName('Aishwarya Roy');
-      setPhone('9876543210');
-      setEmail(`aishwarya.${randomId}@maatrisparsh.com`);
-      setPassword('secure9876');
-      setConfirmPassword('secure9876');
-      setLocalSuccess('Pre-filled fresh registration values. Click Register to join.');
-    }
-    setTimeout(() => {
-      setLocalSuccess(null);
-    }, 4000);
-  };
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4" id="auth-modal-overlay">
@@ -209,27 +189,7 @@ export default function AuthModal({ onClose, onSuccess, initialMode = 'signin' }
             </div>
           )}
 
-          {/* Quick Fill Button */}
-          <div className="bg-amber-50/70 border border-amber-200 p-2 rounded-xl flex items-center justify-between gap-2.5 shadow-xs">
-            <div className="flex items-center space-x-2 min-w-0">
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-stone-950">
-                ⚡
-              </span>
-              <div className="text-left truncate">
-                <span className="text-[10px] font-bold tracking-wider uppercase text-amber-800 block">Assessment Quick Fill</span>
-                <p className="text-[10.5px] text-stone-600 truncate">
-                  {mode === 'signin' ? 'Demo Email Profile' : 'Random registration safe profile'}
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={handleQuickFill}
-              className="text-[9.5px] font-bold uppercase tracking-wider text-amber-900 hover:text-white bg-amber-200 hover:bg-amber-600 px-2.5 py-1 rounded-md transition shrink-0 cursor-pointer"
-            >
-              Auto-Fill
-            </button>
-          </div>
+
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-3">
