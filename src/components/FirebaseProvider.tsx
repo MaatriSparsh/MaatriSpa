@@ -754,36 +754,36 @@ The MaatriSparsh Postpartum Care Sanctum Team
 https://maatrisparsh.com
     `.trim();
 
-    // 1. Send via Resend secure proxy endpoint to bypass CORS and hide keys
-    if (resendApiKey) {
-      try {
-        const response = await fetch('/api/send-email', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Resend-Api-Key': resendApiKey
-          },
-          body: JSON.stringify({
-            from: 'MaatriSparsh Care <care@maatrisparsh.com>',
-            to: [email],
-            subject: emailSubject,
-            text: emailBody
-          })
-        });
-        if (response.ok) {
-          console.log(`[Resend OTP] Verification PIN successfully dispatched to ${email}`);
-          return;
-        } else {
-          const errText = await response.text();
-          console.warn(`Resend proxy failed with status ${response.status}: ${errText}`);
-        }
-      } catch (err) {
-        console.error('Failed to dispatch OTP email via Resend proxy, attempting EmailJS fallback if available...', err);
+    let resendOTPSuccess = false;
+    // 1. Send via Resend secure proxy endpoint to bypass CORS and hide keys (always attempt so server can use its own RESEND_API_KEY)
+    try {
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(resendApiKey ? { 'X-Resend-Api-Key': resendApiKey } : {})
+        },
+        body: JSON.stringify({
+          from: 'MaatriSparsh Care <care@maatrisparsh.com>',
+          to: [email],
+          subject: emailSubject,
+          text: emailBody
+        })
+      });
+      if (response.ok) {
+        console.log(`[Resend OTP] Verification PIN successfully dispatched to ${email}`);
+        resendOTPSuccess = true;
+        return;
+      } else {
+        const errText = await response.text();
+        console.warn(`Resend proxy failed with status ${response.status}: ${errText}`);
       }
+    } catch (err) {
+      console.error('Failed to dispatch OTP email via Resend proxy, attempting EmailJS fallback if available...', err);
     }
 
     // 2. Fallback or alternate send via EmailJS
-    if (serviceId && userTemplateId && publicKey) {
+    if (!resendOTPSuccess && serviceId && userTemplateId && publicKey) {
       try {
         await fetch('https://api.emailjs.com/api/v1.0/email/send', {
           method: 'POST',
@@ -1810,8 +1810,36 @@ System Auto-Logger,
 MaatriSparsh Internal Notification Service
     `;
 
-    // 1. Dispatch User Email (via EmailJS Public Endpoint)
-    if (serviceId && userTemplateId && publicKey) {
+    let userEmailSent = false;
+
+    // 1. Dispatch User Email (attempt via Resend proxy first, relying securely on server-side key setup)
+    try {
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(resendApiKey ? { 'X-Resend-Api-Key': resendApiKey } : {})
+        },
+        body: JSON.stringify({
+          from: 'MaatriSparsh Care <care@maatrisparsh.com>',
+          to: [userEmailAddress],
+          subject: `Booking Confirmed: MaatriSparsh Care Package Session (${payload.id || payload.bookingId})`,
+          text: userEmailBody
+        })
+      });
+      if (response.ok) {
+        console.log(`[Resend Proxy] Booking confirmation successfully sent to user ${userEmailAddress}`);
+        userEmailSent = true;
+      } else {
+        const errText = await response.text();
+        console.warn(`[Resend Proxy] User email dispatch status ${response.status}: ${errText}`);
+      }
+    } catch (err) {
+      console.error('Failed to dispatch user confirmation email via Resend proxy, trying EmailJS fallback...', err);
+    }
+
+    // User Fallback (EmailJS)
+    if (!userEmailSent && serviceId && userTemplateId && publicKey) {
       try {
         await fetch('https://api.emailjs.com/api/v1.0/email/send', {
           method: 'POST',
@@ -1833,34 +1861,46 @@ MaatriSparsh Internal Notification Service
           })
         });
         console.log(`[EmailJS] Booking confirmation successfully sent to user ${userEmailAddress}`);
+        userEmailSent = true;
       } catch (err) {
-        console.error('Failed to dispatch user confirmation email via EmailJS:', err);
+        console.error('Failed to dispatch user confirmation email via EmailJS fallback:', err);
       }
-    } else if (resendApiKey) {
-      try {
-        await fetch('/api/send-email', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Resend-Api-Key': resendApiKey
-          },
-          body: JSON.stringify({
-            from: 'MaatriSparsh Care <care@maatrisparsh.com>',
-            to: [userEmailAddress],
-            subject: `Booking Confirmed: MaatriSparsh Care Package Session (${payload.id || payload.bookingId})`,
-            text: userEmailBody
-          })
-        });
-        console.log(`[Resend Proxy] Booking confirmation successfully sent to user ${userEmailAddress}`);
-      } catch (err) {
-        console.error('Failed to dispatch user confirmation email via Resend proxy:', err);
-      }
-    } else {
-      console.warn('[Email Integration] User SMTP/Email credentials not configured yet. Detailed email payload generated inside activityLogs.');
     }
 
-    // 2. Dispatch Admin Email (via EmailJS Public Endpoint)
-    if (serviceId && adminTemplateId && publicKey) {
+    if (!userEmailSent) {
+      console.warn(`[Email Integration] User email could not be sent. Please configure your Server RESEND_API_KEY or client VITE_EMAILJS setup.`);
+    }
+
+    let adminEmailSent = false;
+
+    // 2. Dispatch Admin Email (attempt via Resend proxy first)
+    try {
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(resendApiKey ? { 'X-Resend-Api-Key': resendApiKey } : {})
+        },
+        body: JSON.stringify({
+          from: 'MaatriSparsh Care Alerts <alerts@maatrisparsh.com>',
+          to: [adminEmailAddress],
+          subject: `🚨 Booking Arrived: New Care Package scheduled (${payload.id || payload.bookingId})`,
+          text: adminEmailBody
+        })
+      });
+      if (response.ok) {
+        console.log(`[Resend Proxy] New booking notification successfully sent to admin ${adminEmailAddress}`);
+        adminEmailSent = true;
+      } else {
+        const errText = await response.text();
+        console.warn(`[Resend Proxy] Admin email dispatch status ${response.status}: ${errText}`);
+      }
+    } catch (err) {
+      console.error('Failed to dispatch admin notification email via Resend proxy, trying EmailJS fallback...', err);
+    }
+
+    // Admin Fallback (EmailJS)
+    if (!adminEmailSent && serviceId && adminTemplateId && publicKey) {
       try {
         await fetch('https://api.emailjs.com/api/v1.0/email/send', {
           method: 'POST',
@@ -1882,30 +1922,10 @@ MaatriSparsh Internal Notification Service
           })
         });
         console.log(`[EmailJS] New booking notification successfully sent to admin ${adminEmailAddress}`);
+        adminEmailSent = true;
       } catch (err) {
-        console.error('Failed to dispatch admin notification email via EmailJS:', err);
+        console.error('Failed to dispatch admin notification email via EmailJS fallback:', err);
       }
-    } else if (resendApiKey) {
-      try {
-        await fetch('/api/send-email', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Resend-Api-Key': resendApiKey
-          },
-          body: JSON.stringify({
-            from: 'MaatriSparsh Care Alerts <alerts@maatrisparsh.com>',
-            to: [adminEmailAddress],
-            subject: `🚨 Booking Arrived: New Care Package scheduled (${payload.id || payload.bookingId})`,
-            text: adminEmailBody
-          })
-        });
-        console.log(`[Resend Proxy] New booking notification successfully sent to admin ${adminEmailAddress}`);
-      } catch (err) {
-        console.error('Failed to dispatch admin notification email via Resend proxy:', err);
-      }
-    } else {
-      console.warn('[Email Integration] Admin SMTP/Email credentials not configured yet. Detailed email payload generated inside activityLogs.');
     }
 
     try {
