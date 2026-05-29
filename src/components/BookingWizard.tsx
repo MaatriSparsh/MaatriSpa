@@ -304,18 +304,6 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
     return slotMins < currentMins;
   };
 
-  // Handle service selection change
-  const handleSelectService = (service: Service) => {
-    setSelectedService(service);
-    // Auto-recommend appropriate practitioner based on service specialties
-    if (service.category === 'postpartum_mother') {
-      setSelectedPractitioner(PRACTITIONERS[0]); // Meera Nair
-    } else if (service.category === 'newborn_baby' || service.id === 'lactation-consult') {
-      setSelectedPractitioner(PRACTITIONERS[1]); // Dr Shreya Joshi
-    } else {
-      setSelectedPractitioner(PRACTITIONERS[2]); // Pallavi Sen
-    }
-  };
 
   const handleNextStep = () => {
     setValidationError('');
@@ -473,8 +461,7 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
       originalPrice: selectedService.priceInr,
       priceInr: selectedService.priceInr,
       discountedPriceApplied: selectedService.priceInr,
-      gstInr: Math.round(selectedService.priceInr * 0.18),
-      finalPriceInr: Math.round(selectedService.priceInr * 1.18)
+      finalPriceInr: Math.round(selectedService.priceInr * 1)
     };
 
     try {
@@ -521,8 +508,7 @@ export default function BookingWizard({ onClose, onBookingSuccess, preselectedSe
         originalPrice: selectedService.priceInr,
         priceInr: selectedService.priceInr,
         discountedPriceApplied: selectedService.priceInr,
-        gstInr: Math.round(selectedService.priceInr * 0.18),
-        finalPriceInr: Math.round(selectedService.priceInr * 1.18)
+        finalPriceInr: Math.round(selectedService.priceInr * 1)
       }, selectedTargetUserId || undefined, !sendEmailConfirm);
 
       setCreatedBooking(bookingPayload);
