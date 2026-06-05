@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { ArrowRight, Leaf, Heart, Star, Sparkles, Smile, Baby, Calendar, Play, Pause, Volume2, VolumeX, Upload, RotateCcw, Trash2 } from 'lucide-react';
+import { ArrowRight, Leaf, Heart, Star, Sparkles, Smile, Baby, Calendar, Play, Pause, Volume2, VolumeX, Upload, RotateCcw, Trash2, Check, Tag, ChevronDown, ChevronUp, Info, Percent, Shield } from 'lucide-react';
 import { Service } from '../types';
 import { SERVICES as STATIC_SERVICES } from '../data';
 import { useFirebase } from './FirebaseProvider';
@@ -97,6 +97,15 @@ export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: 
   const [useIframeFallback, setUseIframeFallback] = useState<boolean>(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const [deliveryType, setDeliveryType] = useState<'normal' | 'lscs'>('normal');
+  const [selectedMMServiceId, setSelectedMMServiceId] = useState<string>('normal-sukoon-7');
+  const [activeCouponCode, setActiveCouponCode] = useState<string>('');
+  const [activeMMTab, setActiveMMTab] = useState<'benefits' | 'pricing'>('benefits');
+
+  useEffect(() => {
+    setSelectedMMServiceId(deliveryType === 'normal' ? 'normal-sukoon-7' : 'lscs-sukoon-7');
+  }, [deliveryType]);
 
   const defaultVideo = 'https://www.instagram.com/reel/DYzl-FIsD4e/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==';
 
@@ -638,120 +647,370 @@ export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: 
       </section>
 
       {/* Interactive Matchmaker Widget (Postnatal & Newborn Custom Profile Selector) */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-stone-50">
-        <div className="mx-auto max-w-4xl">
-          <div className="bg-white rounded-3xl border border-stone-200 shadow-lg overflow-hidden grid grid-cols-1 md:grid-cols-12">
-            
-            {/* Selection Inputs Column */}
-            <div className="md:col-span-7 p-5 sm:p-7 space-y-6">
-              <div className="space-y-1">
-                <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-[#a16207] font-mono flex items-center space-x-1.5 animate-pulse">
-                  <Smile className="h-4.5 w-4.5 text-amber-500 shrink-0" />
-                  <span>{language === 'en' ? 'Interactive Health Planner' : 'इंटरएक्टिव स्वास्थ्य योजना प्रबंधक'}</span>
-                </span>
-                <h3 className="font-serif text-xl sm:text-2xl font-bold text-stone-900">
-                  {t.recommendationTitle}
-                </h3>
-                <p className="text-xs text-stone-500 leading-relaxed">
-                  {t.recommendationSub}
-                </p>
-              </div>
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-stone-50" id="package-matchmaker-planner">
+        <div className="mx-auto max-w-5xl">
+          
+          <div className="text-center max-w-3xl mx-auto space-y-3 mb-10">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#a16207] font-mono flex items-center justify-center space-x-1.5">
+              <Smile className="h-4.5 w-4.5 text-amber-500 shrink-0" />
+              <span>{language === 'en' ? 'Interactive Care Explorer' : 'अन्तरक्रियात्मक मातृत्व केयर प्लानर'}</span>
+            </span>
+            <h2 className="text-2.5xl sm:text-4xl font-bold tracking-tight text-stone-950 font-serif">
+              {language === 'en' ? 'Find & Calculate Your Perfect Package' : 'अपना आदर्श केयर पैकेज चुनें व फीस की गणना करें'}
+            </h2>
+            <div className="h-0.5 w-16 bg-emerald-800 mx-auto rounded-full" />
+            <p className="text-stone-600 text-xs sm:text-sm leading-relaxed">
+              {language === 'en' 
+                ? 'Select your delivery parameters, toggle between matched packages, and apply real promotional certificates to see final transparent costs.'
+                : 'अपनी प्रसव स्थिति व आवश्यकताओं का चयन करें, विभिन्न पैकेजों में टूल स्विच करें, और वास्तविक छूट प्रमाणपत्र लागू करके पारदर्शी फीस देखें।'}
+            </p>
+          </div>
 
-              {/* Timeline Step Pickers */}
-              <div className="space-y-2">
-                <label className="text-[11px] font-bold text-stone-500 uppercase tracking-wider block">
-                  {t.recommendationTimeline}
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { id: 'expecting', en: "Pregnancy / Pre-delivery", hi: "गर्भावस्था / अंतिम सप्ताह" },
-                    { id: 'early', en: "1-4 Weeks Postnatal", hi: "१-४ सप्ताह प्रसवोत्तर" },
-                    { id: 'medium', en: "5-12 Weeks Postnatal", hi: "५-१२ सप्ताह प्रसवोत्तर" },
-                    { id: 'late', en: "3+ Months Postnatal", hi: "३+ महीने प्रसवोत्तर" },
-                  ].map((tItem) => (
+          <div className="bg-white rounded-3xl border border-stone-200 shadow-xl overflow-hidden grid grid-cols-1 lg:grid-cols-12">
+            
+            {/* Selection Inputs Column (Left Side) */}
+            <div className="lg:col-span-7 p-5 sm:p-8 space-y-6 flex flex-col justify-between">
+              
+              <div className="space-y-5">
+                {/* 1. Delivery Profile Selector */}
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold text-stone-500 uppercase tracking-wider flex items-center gap-1.5">
+                    <Shield className="h-3.5 w-3.5 text-emerald-800" />
+                    {language === 'en' ? '1. Select Delivery Method' : '१. प्रसव का प्रकार चुनें'}
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
                     <button
-                      key={tItem.id}
-                      onClick={() => setTimeline(tItem.id as any)}
-                      className={`text-left p-3 rounded-xl border text-[11px] font-semibold tracking-wide transition-all cursor-pointer ${
-                        timeline === tItem.id
-                          ? 'border-emerald-800 bg-emerald-50 text-emerald-950 font-bold'
+                      onClick={() => setDeliveryType('normal')}
+                      className={`text-center p-3.5 rounded-2xl border text-xs font-bold tracking-wide transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
+                        deliveryType === 'normal'
+                          ? 'border-emerald-800 bg-emerald-50/70 text-emerald-950 ring-2 ring-emerald-800/15'
                           : 'border-stone-200 bg-white hover:bg-stone-50 text-stone-600'
                       }`}
                     >
-                      {language === 'en' ? tItem.en : tItem.hi}
+                      <span className="text-sm">🌸</span>
+                      <span>{language === 'en' ? 'Normal Delivery Care' : 'नॉर्मल डिलीवरी केयर'}</span>
                     </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Need categories chips picker */}
-              <div className="space-y-2">
-                <label className="text-[11px] font-bold text-stone-500 uppercase tracking-wider block">
-                  {t.recommendationNeed}
-                </label>
-                <div className="flex flex-wrap gap-2" id="care-needs-chips">
-                  {[
-                    { id: 'pain', en: 'Body Pain / Spine Ache', hi: 'कमर और शरीर का अत्यधिक दर्द' },
-                    { id: 'colic', en: 'Infant Colic / Wind', hi: 'शिशु का पेट दर्द / रोना' },
-                    { id: 'lactation', en: 'Breastfeeding Latch', hi: 'स्तनपान और दूध बढ़ाने की समस्या' },
-                    { id: 'blues', en: 'Maternal Blues / Stress', hi: 'नींद की कमी व मानसिक तनाव' },
-                  ].map((n) => (
                     <button
-                      key={n.id}
-                      onClick={() => setNeed(n.id as any)}
-                      className={`py-2 px-3 text-[11px] font-medium rounded-lg border transition-all cursor-pointer ${
-                        need === n.id
-                          ? 'bg-stone-900 border-stone-900 text-stone-50'
-                          : 'bg-stone-50 border-stone-200 hover:bg-stone-105 text-stone-700'
+                      onClick={() => setDeliveryType('lscs')}
+                      className={`text-center p-3.5 rounded-2xl border text-xs font-bold tracking-wide transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
+                        deliveryType === 'lscs'
+                          ? 'border-emerald-800 bg-emerald-50/70 text-emerald-950 ring-2 ring-emerald-800/15'
+                          : 'border-stone-200 bg-white hover:bg-stone-50 text-stone-600'
                       }`}
                     >
-                      {language === 'en' ? n.en : n.hi}
+                      <span className="text-sm">👩‍⚕️</span>
+                      <span>{language === 'en' ? 'C-Section / LSCS Care' : 'सी-सेक्शन (सिजेरियन) केयर'}</span>
                     </button>
-                  ))}
+                  </div>
+                </div>
+
+                {/* 2. Timeline Step Pickers */}
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold text-stone-500 uppercase tracking-wider block">
+                    {language === 'en' ? '2. Postnatal Phase Timeline' : '२. प्रसवोत्तर चरण / वर्तमान अवधि'}
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { id: 'expecting', en: "Pregnancy / Pre-delivery", hi: "गर्भावस्था / प्रसव पूर्व" },
+                      { id: 'early', en: "1-4 Weeks Postnatal", hi: "१-४ सप्ताह प्रसवोत्तर" },
+                      { id: 'medium', en: "5-12 Weeks Postnatal", hi: "५-१२ सप्ताह प्रसवोत्तर" },
+                      { id: 'late', en: "3+ Months Postnatal", hi: "३+ महीने प्रसवोत्तर" },
+                    ].map((tItem) => (
+                      <button
+                        key={tItem.id}
+                        onClick={() => setTimeline(tItem.id as any)}
+                        className={`text-left px-3 py-2.5 rounded-xl border text-[11px] font-semibold tracking-wide transition-all cursor-pointer ${
+                          timeline === tItem.id
+                            ? 'border-stone-800 bg-stone-900 text-white font-bold'
+                            : 'border-stone-200 bg-white hover:bg-stone-50 text-stone-600'
+                        }`}
+                      >
+                        {language === 'en' ? tItem.en : tItem.hi}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 3. Need categories chips picker */}
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold text-stone-500 uppercase tracking-wider block">
+                    {language === 'en' ? '3. Primary Care Need' : '३. मुख्य शारीरिक आवश्यकता / तकलीफ'}
+                  </label>
+                  <div className="flex flex-wrap gap-2" id="care-needs-chips">
+                    {[
+                      { id: 'pain', en: 'Body Pain / Spine Ache', hi: 'पीठ दर्द व शारीरिक थकान' },
+                      { id: 'colic', en: 'Infant Colic / Wind', hi: 'शिशु का रोना / मरोड़ दर्द' },
+                      { id: 'lactation', en: 'Breastfeeding Latch', hi: 'स्तनपान सही कराने का प्रशिक्षण' },
+                      { id: 'blues', en: 'Maternal Blues / Stress', hi: 'नींद की कमी व प्रसवोत्तर चिढ़चिढ़ाहट' },
+                    ].map((n) => (
+                      <button
+                        key={n.id}
+                        onClick={() => setNeed(n.id as any)}
+                        className={`py-2 px-3 text-[11px] font-medium rounded-lg border transition-all cursor-pointer ${
+                          need === n.id
+                            ? 'bg-[#a16207] border-[#a16207] text-[#fefce8] font-semibold shadow-xs'
+                            : 'bg-stone-50 border-stone-200 hover:bg-stone-100 text-stone-700'
+                        }`}
+                      >
+                        {language === 'en' ? n.en : n.hi}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Live Recommendation Output Column */}
-            <div className="md:col-span-5 bg-gradient-to-tr from-emerald-900 to-emerald-800 text-stone-50 p-5 sm:p-7 flex flex-col justify-between border-t md:border-t-0 md:border-l border-emerald-950">
-              <div className="space-y-4">
-                <span className="inline-flex items-center space-x-1 rounded-full bg-emerald-950/60 px-2.5 py-1 text-[9px] uppercase font-bold text-emerald-100">
-                  <Leaf className="h-3 w-3 text-emerald-400" />
-                  <span>{language === 'en' ? 'Sanctum Recommends' : 'हमारे विशेषज्ञ का सुझाव'}</span>
-                </span>
-
-                <div className="space-y-1.5">
-                  <h4 className="font-serif text-base sm:text-lg font-bold text-rose-250 leading-snug">
-                    {language === 'en' ? recommendedService.name : recommendedService.nameHindi}
-                  </h4>
-                  <p className="text-stone-300 text-xs leading-relaxed line-clamp-3">
-                    {language === 'en' ? recommendedService.description : recommendedService.descriptionHindi}
-                  </p>
-                </div>
-
-                <div className="bg-emerald-950/45 p-3.5 rounded-xl border border-emerald-800/30 text-[10.5px] leading-relaxed text-stone-200">
-                  <strong className="text-amber-300 block mb-0.5">
-                    {language === 'en' ? 'Why this matches:' : 'प्रभावी परिणाम क्यों:'}
-                  </strong>
-                  {language === 'en' ? reason : reasonHindi}
-                </div>
-              </div>
-
-              <div className="pt-6 border-t border-emerald-800/40 space-y-3 mt-4">
-                <div className="flex justify-between items-baseline text-xs text-stone-300">
-                  <span>{language === 'en' ? 'Consulting Session Fee:' : 'सत्र परामर्श शुल्क:'}</span>
-                  <span className="font-serif font-black text-xl text-white">
-                    ₹{recommendedService.priceInr.toLocaleString('en-IN')}
+              {/* Matched Care Packages Interactive List */}
+              <div className="pt-6 border-t border-stone-150 space-y-3">
+                <div className="flex justify-between items-baseline">
+                  <span className="text-[11px] font-extrabold text-emerald-800 uppercase tracking-widest font-mono">
+                    {language === 'en' ? 'Matched Packages (Click to load details)' : 'आपके लिए उपयुक्त पैकेज (विवरण के लिए क्लिक करें)'}
                   </span>
                 </div>
-                <button
-                  onClick={() => onOpenBookingWithService(recommendedService.id)}
-                  className="w-full rounded-xl bg-amber-500 hover:bg-amber-600 text-stone-950 py-3 text-xs font-bold uppercase tracking-wider transition-all shadow-sm active:scale-95 cursor-pointer"
-                >
-                  {t.recommendationGo}
-                </button>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" id="mm-filtered-packages">
+                  {activeServices
+                    .filter(s => deliveryType === 'normal' ? s.id.startsWith('normal') : s.id.startsWith('lscs'))
+                    .map((s) => {
+                      const isSelected = selectedMMServiceId === s.id;
+                      return (
+                        <div
+                          key={s.id}
+                          onClick={() => setSelectedMMServiceId(s.id)}
+                          className={`p-3.5 rounded-2xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between group ${
+                            isSelected 
+                              ? 'border-emerald-800 bg-emerald-50/40 ring-1 ring-emerald-800' 
+                              : 'border-stone-200 hover:border-stone-300 hover:shadow-xs bg-stone-50/50'
+                          }`}
+                        >
+                          <div>
+                            <div className="flex justify-between items-start gap-1 pb-1">
+                              <h4 className="text-xs font-bold text-stone-900 group-hover:text-emerald-900 transition-colors font-serif line-clamp-1">
+                                {language === 'en' ? s.name.split(' - ')[0] : s.nameHindi.split(' - ')[0]}
+                              </h4>
+                              {isSelected && <span className="bg-emerald-800 text-white p-0.5 rounded-full text-[8px] animate-pulse">✓</span>}
+                            </div>
+                            <p className="text-[10px] text-stone-500 line-clamp-2 leading-relaxed">
+                              {language === 'en' ? s.description : s.descriptionHindi}
+                            </p>
+                          </div>
+                          <div className="pt-2.5 mt-2 border-t border-stone-200/50 flex justify-between items-baseline text-[11px] font-mono">
+                            <span className="text-stone-400">⏱ {s.duration} mins</span>
+                            <span className="font-extrabold text-[#a16207]">₹{s.priceInr.toLocaleString('en-IN')}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
               </div>
+
             </div>
+
+            {/* Dynamic Package Reader & Price Calculations Column (Right Side - Deep Dive) */}
+            {(() => {
+              const currentMMService = activeServices.find(s => s.id === selectedMMServiceId) || activeServices[0];
+              
+              // Calculate discount logic:
+              const originalPrice = currentMMService.priceInr;
+              let discount = 0;
+              let promoText = '';
+
+              if (activeCouponCode === 'FESTIVAL20') {
+                discount = Math.round(originalPrice * 0.20);
+                if (discount > 1000) discount = 1000;
+                promoText = language === 'en' ? 'Festival Welcome 20% Voucher Applied!' : 'विशेष त्योहार २०% कूपन लागू हुआ!';
+              } else if (activeCouponCode === 'NEWBORN15') {
+                discount = Math.round(originalPrice * 0.15);
+                if (discount > 500) discount = 500;
+                promoText = language === 'en' ? 'New Mother Welcome 15% Token Applied!' : 'नई माँ स्वागत १५% कूपन लागू हुआ!';
+              } else if (activeCouponCode === 'SANCTUM500') {
+                if (originalPrice >= 2500) {
+                  discount = 500;
+                  promoText = language === 'en' ? 'Flat ₹500 Discount Voucher Applied!' : 'फ्लैट ₹५०० की सीधी बचत कूपन लागू हुआ!';
+                }
+              }
+
+              const finalPrice = originalPrice - discount;
+
+              return (
+                <div className="lg:col-span-5 bg-gradient-to-br from-stone-900 via-stone-950 to-stone-900 text-stone-100 p-5 sm:p-8 flex flex-col justify-between border-t lg:border-t-0 lg:border-l border-stone-850">
+                  <div className="space-y-5">
+                    
+                    {/* Header badge with image backdrop */}
+                    <div className="relative rounded-2xl overflow-hidden h-36 bg-stone-900 border border-stone-800">
+                      <img 
+                        src={currentMMService.image} 
+                        alt={currentMMService.name} 
+                        className="w-full h-full object-cover opacity-60"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/40 to-transparent" />
+                      
+                      <div className="absolute top-3 left-3 bg-rose-950/80 backdrop-blur-xs px-2.5 py-0.5 rounded-full border border-rose-900 text-[9px] font-bold uppercase tracking-widest text-rose-250">
+                        {language === 'en' ? currentMMService.category.replace('_', ' ') : 'प्रसवोत्तर सुरक्षा'}
+                      </div>
+
+                      <div className="absolute bottom-3 left-3 right-3 text-left">
+                        <span className="text-[9px] font-bold font-mono tracking-widest uppercase text-amber-400 block pb-0.5">
+                          {language === 'en' ? 'Selected Package' : 'चयनित पैकेज'}
+                        </span>
+                        <h3 className="font-serif text-sm sm:text-base font-bold text-white line-clamp-1 leading-tight">
+                          {language === 'en' ? currentMMService.name : currentMMService.nameHindi}
+                        </h3>
+                      </div>
+                    </div>
+
+                    {/* Interactive Tab Switcher */}
+                    <div className="grid grid-cols-2 bg-stone-900 p-1 rounded-xl border border-stone-800">
+                      <button
+                        onClick={() => setActiveMMTab('benefits')}
+                        className={`py-2 text-[11px] font-bold uppercase tracking-wider text-center rounded-lg transition-all cursor-pointer ${
+                          activeMMTab === 'benefits'
+                            ? 'bg-emerald-800/80 text-white shadow-xs font-black'
+                            : 'text-stone-400 hover:text-stone-200'
+                        }`}
+                      >
+                        {language === 'en' ? '📋 Included Therapies' : '📋 शामिल सत्र थेरेपी'}
+                      </button>
+                      <button
+                        onClick={() => setActiveMMTab('pricing')}
+                        className={`py-2 text-[11px] font-bold uppercase tracking-wider text-center rounded-lg transition-all cursor-pointer ${
+                          activeMMTab === 'pricing'
+                            ? 'bg-emerald-800/80 text-white shadow-xs font-black'
+                            : 'text-stone-400 hover:text-stone-200'
+                        }`}
+                      >
+                        {language === 'en' ? '💰 Price Details' : '💰 फीस का पारदर्शी विवरण'}
+                      </button>
+                    </div>
+
+                    {/* Tab 1 Content: Benefits List with animated rows */}
+                    {activeMMTab === 'benefits' && (
+                      <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                        {(language === 'en' ? currentMMService.benefits : currentMMService.benefitsHindi || currentMMService.benefits).map((benefit, bIdx) => (
+                          <div key={bIdx} className="flex gap-2.5 items-start text-xs text-stone-300 leading-relaxed bg-stone-900/35 p-2 rounded-lg border border-stone-850">
+                            <Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                            <span>{benefit}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Tab 2 Content: Cost Breakdown Grid with Interactive Coupon Result */}
+                    {activeMMTab === 'pricing' && (
+                      <div className="space-y-2.5 text-xs text-stone-300 bg-stone-900/50 p-4 rounded-xl border border-stone-800">
+                        <div className="flex justify-between items-center py-1 border-b border-stone-850">
+                          <span className="text-stone-400">{language === 'en' ? 'Base Package Tuition:' : 'मूल स्वास्थ्य सेवा शुल्क:'}</span>
+                          <span className="font-mono font-medium">₹{originalPrice.toLocaleString('en-IN')}</span>
+                        </div>
+                        <div className="flex justify-between items-center py-1 border-b border-stone-850">
+                          <span className="text-stone-400 flex items-center gap-1">
+                            <span>🌿</span>
+                            <span>{language === 'en' ? 'Organic Herbal Oils:' : 'ऑर्गेनिक हर्बल तेल:'}</span>
+                          </span>
+                          <span className="text-emerald-400 font-bold uppercase text-[9.5px] font-mono bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-900">{language === 'en' ? 'Included / Free' : 'शामिल / मुफ़्त'}</span>
+                        </div>
+                        <div className="flex justify-between items-center py-1 border-b border-stone-850">
+                          <span className="text-stone-400 flex items-center gap-1">
+                            <span>🎗</span>
+                            <span>{language === 'en' ? 'Cotton Belly Binding Wrap:' : 'सूती बेली बाइंडिंग पट्टा:'}</span>
+                          </span>
+                          <span className="text-emerald-400 font-bold uppercase text-[9.5px] font-mono bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-900">{language === 'en' ? 'Included / Free' : 'शामिल / मुफ़्त'}</span>
+                        </div>
+                        <div className="flex justify-between items-center py-1 border-b border-stone-850">
+                          <span className="text-stone-400">{language === 'en' ? 'GST Tax Rate:' : 'जीएसटी (कर की दर):'}</span>
+                          <span className="text-amber-400 shrink-0 font-bold text-[9.5px] font-mono bg-amber-950/30 px-1.5 py-0.5 rounded border border-amber-900">{language === 'en' ? '₹0 (Tax Exempt Recovery)' : '₹0 (स्वास्थ्य सेवा कर मुक्त)'}</span>
+                        </div>
+                        {discount > 0 && (
+                          <div className="flex justify-between items-center py-1 border-b border-stone-850 text-emerald-400 font-bold">
+                            <span>{language === 'en' ? 'Certificate Reduction:' : 'छूट कूपन कटौती:'}</span>
+                            <span className="font-mono">-₹{discount.toLocaleString('en-IN')}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between items-center pt-2 text-white font-serif font-bold text-sm">
+                          <span>{language === 'en' ? 'Net Calculated Cost:' : 'कुल पारदर्शी शुल्क:'}</span>
+                          <span className="text-rose-250 font-mono text-base">₹{finalPrice.toLocaleString('en-IN')}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Interactive Special Offers Apply Field */}
+                    <div className="space-y-2 pt-2 border-t border-stone-800">
+                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#a16207] font-mono flex items-center gap-1.5">
+                        <Tag className="h-3.5 w-3.5" />
+                        {language === 'en' ? 'Active Promotional Vouchers (Click to Apply)' : 'सक्रिय मातृत्व बचत वाउचर्स (लागू करने हेतु क्लिक करें)'}
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {[
+                          { code: 'FESTIVAL20', pct: '20%', labelEn: '20% Off', labelHi: '२०% छूट' },
+                          { code: 'NEWBORN15', pct: '15%', labelEn: '15% Off', labelHi: '१५% छूट' },
+                          { code: 'SANCTUM500', pct: '₹500', labelEn: '₹500 Off', labelHi: '₹५०० बचाएं' }
+                        ].map((cp) => {
+                          const isApplied = activeCouponCode === cp.code;
+                          return (
+                            <button
+                              key={cp.code}
+                              onClick={() => setActiveCouponCode(isApplied ? '' : cp.code)}
+                              className={`py-1.5 px-3 rounded-xl border text-[10.5px] font-mono font-bold tracking-wider transition-all duration-150 cursor-pointer flex items-center gap-1 ${
+                                isApplied
+                                  ? 'bg-emerald-800 border-white text-white shadow-xs scale-103'
+                                  : 'bg-stone-900 border-stone-800 text-stone-300 hover:bg-stone-800'
+                              }`}
+                            >
+                              <Percent className="h-3 w-3 text-amber-500" />
+                              <span>{cp.code}</span>
+                              <span className="text-[9px] bg-stone-950/40 text-stone-300 px-1.5 py-0.5 rounded border border-stone-800">{language === 'en' ? cp.labelEn : cp.labelHi}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      
+                      {/* Interactive alert summarizing savings */}
+                      {discount > 0 && promoText && (
+                        <div className="p-2.5 rounded-lg bg-emerald-950/45 border border-emerald-900 text-[11px] text-emerald-300 flex items-center gap-1.5 animate-fade-in">
+                          <span>✨</span>
+                          <span>{promoText} (<strong>{language === 'en' ? 'Saved' : 'बचे'}: ₹{discount}</strong>)</span>
+                        </div>
+                      )}
+                    </div>
+
+                  </div>
+
+                  {/* Immediate Action Buttons */}
+                  <div className="pt-5 border-t border-stone-800 space-y-3 mt-4">
+                    <div className="flex justify-between items-baseline font-sans text-xs">
+                      <span className="text-[#a16207] font-bold flex items-center gap-1.5">
+                        <Info className="h-4 w-4 shrink-0" />
+                        {language === 'en' ? 'Total Payable (No Hidden Costs):' : 'अंतिम देय शुल्क (कोई छिपी फीस नहीं):'}
+                      </span>
+                      <span className="font-serif font-black text-2xl text-white">
+                        ₹{finalPrice.toLocaleString('en-IN')}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        onClick={() => onNavigateToTab('services')}
+                        className="rounded-xl border border-stone-700 bg-stone-900/60 hover:bg-stone-800 text-stone-200 py-3 text-xs font-bold uppercase tracking-wider transition-all active:scale-95 cursor-pointer text-center"
+                      >
+                        {language === 'en' ? 'Explore Details' : 'विस्तार से जानें'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          const wizardBtn = document.getElementById('wizard-booking-entry-trigger');
+                          if (wizardBtn) {
+                            onOpenBookingWithService(currentMMService.id);
+                          } else {
+                            onOpenBookingWithService(currentMMService.id);
+                          }
+                        }}
+                        className="rounded-xl bg-amber-500 hover:bg-amber-600 text-stone-950 py-3 text-xs font-bold uppercase tracking-wider transition-all shadow-sm active:scale-95 cursor-pointer text-center"
+                      >
+                        {language === 'en' ? 'Book Package' : 'पैकेज बुक करें'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
           </div>
         </div>

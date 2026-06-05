@@ -49,7 +49,7 @@ export interface TranslationSet {
 
 export const translations: Record<'en' | 'hi', TranslationSet> = {
   en: {
-    welcome: "Nurturing Ayurvedic Postpartum Motherhood & Infant Wellness",
+    welcome: "Nurturing Postpartum Motherhood & Infant Wellness",
     heroTitle: "Gently Healing the Mother, Nurturing the ",
     heroTitleAccent: "Newborn",
     heroDesc: "Enter MaatriSparsh. Guided by traditional midwives and certified clinical pediatricians, we coordinate therapeutic whole-body Abhyanga, herbal pelvic wraps, expert lactation solutions, and gentle colic-release baby massage rituals inside a peaceful, stress-free cocoon.",
@@ -97,10 +97,10 @@ export const translations: Record<'en' | 'hi', TranslationSet> = {
     totalBookings: "Total Bookings Found",
   },
   hi: {
-    welcome: "मातृस्पर्श: आयुर्वेदिक प्रसवोत्तर मातृ और नवजात शिशु कल्याण केंद्र",
+    welcome: "मातृस्पर्श: प्रसवोत्तर मातृ और नवजात शिशु कल्याण केंद्र",
     heroTitle: "माता का स्नेहपूर्ण उपचार, नवजात शिशु की सुदृढ़ ",
     heroTitleAccent: "देखभाल",
-    heroDesc: "मातृस्पर्श में आपका स्वागत है। पारंपरिक दाइयों और प्रमाणित अनुभवी शिशु रोग विशेषज्ञों के मार्गदर्शन में, हम एक शांत और तनावमुक्त वातावरण में संपूर्ण शरीर की आयुर्वेदिक अभ्यंग थेरेपी, औषधीय हर्बल बेली बाइंडिंग, स्तनपान परामर्श और शिशुओं की सौम्य तेल मालिश सुलभ कराते हैं।",
+    heroDesc: "मातृस्पर्श में आपका स्वागत है। पारंपरिक दाइयों और प्रमाणित अनुभवी शिशु रोग विशेषज्ञों के मार्गदर्शन में, हम एक शांत और तनावमुक्त वातावरण में संपूर्ण शरीर की कोमल अभ्यंग थेरेपी, औषधीय हर्बल बेली बाइंडिंग, स्तनपान परामर्श और शिशुओं की सौम्य तेल मालिश सुलभ कराते हैं।",
     exploreBtn: "सेवाएं और उपचार देखें",
     latchingBtn: "स्तनपान एवं लैक्टेशन परामर्श",
     metricsMothers: "१,८००+",

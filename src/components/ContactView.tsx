@@ -70,8 +70,8 @@ export default function ContactView() {
         ? "Are the massage oils safe for newborn baby skin?"
         : "क्या मालिश के लिए प्रयुक्त तेल नवजात शिशु की संवेदनशील त्वचा के लिए सुरक्षित हैं?",
       a: language === 'en'
-        ? "Absolutely. We utilize exclusively cold-pressed organic sesame or coconut oils infused with mild Ayurvedic safe herbs (such as Bala or Ashwagandha root). They contain zero synthetic chemicals, fragrances, parabens, or heavy elements."
-        : "बिल्कुल। हम केवल शुद्ध कोल्ड-प्रेस्ड जैविक तिल या नारियल तेलों का उपयोग करते हैं, जिनमें बहुत सौम्य प्राकृतिक आयुर्वेदिक जड़ी-बूटियों (जैसे बला या अश्वगंधा जड़) का अर्क मिलाया जाता है। इनमें कोई कृत्रिम रसायन, भारी तत्व या कृत्रिम सुगंध नहीं होती।"
+        ? "Absolutely. We utilize exclusively cold-pressed organic sesame or coconut oils infused with mild traditional safe herbs (such as Bala or Ashwagandha root). They contain zero synthetic chemicals, fragrances, parabens, or heavy elements."
+        : "बिल्कुल। हम केवल शुद्ध कोल्ड-प्रेस्ड जैविक तिल या नारियल तेलों का उपयोग करते हैं, जिनमें बहुत सौम्य प्राकृतिक जड़ी-बूटियों (जैसे बला या अश्वगंधा जड़) का अर्क मिलाया जाता है। इनमें कोई कृत्रिम रसायन, भारी तत्व या कृत्रिम सुगंध नहीं होती।"
     },
     {
       q: language === 'en'

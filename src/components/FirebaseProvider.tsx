@@ -135,7 +135,7 @@ const DEFAULT_REVIEWS: Review[] = [
     rating: 5,
     comment: "My newborn was crying continuously from wind gas. The lactation coordinator taught us correct swaddling wraps and supportive digestive schedule. Dev sleeps beautifully now!",
     commentHindi: "हमारा नवजात शिशु पेट में मरोड़ और अनिंद्रा के दर्द से परेशान रहता था। समन्वयक टीम ने हमें आरामदायक स्वैडलिंग (लपेटना) और पौष्टिक प्रसवोत्तर भोजन योजना सिखाई। देव अब बहुत आराम से सोता है।",
-    serviceName: "Ayurvedic Abhyanga",
+    serviceName: "Abhyanga Recovery",
     childName: "Baby Dev (6 Weeks)",
     status: "Approved",
     isFeatured: true,

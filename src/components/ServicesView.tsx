@@ -111,13 +111,13 @@ export default function ServicesView({ onOpenBookingWithService }: ServicesViewP
       ],
       extendedDetailsEn: [
         'Features the sacred traditional cotton stomach wrapping (Belly Binding) to restore abdominal muscle tone.',
-        'Complete 14 sessions of rejuvenating body massage utilizing certified Ayurvedic Tailam.',
+        'Complete 14 sessions of rejuvenating body massage utilizing certified Traditional Herbal Oils.',
         'Registered clinical nurse checkup to monitor postpartum blood pressure, pelvic healing, and nursery guidelines.',
         'Luxurious herbal-infusion warm bath therapies that leave you feeling light and completely renewed.'
       ],
       extendedDetailsHi: [
         'गर्भाशय और पेट के मांसपेशियों की टोन वापस लाने के लिए सूती कपड़े द्वारा पारंपरिक पेट बांधने की सघन विधि।',
-        'प्रमाणित केरल आयुर्वेदिक जड़ी-बूटियों के तेल से बने रिलैक्सेशन मालिश के पूरे 14 सत्र।',
+        'प्रमाणित केरल पारंपरिक जड़ी-बूटियों के तेल से बने रिलैक्सेशन मालिश के पूरे 14 सत्र।',
         'पंजीकृत नर्स द्वारा प्रसवोत्तर रक्तचाप, टांके के जुड़ाव और शिशु की सुरक्षा की नैदानिक जांच।',
         'शरीर को हल्का करने और नकारात्मक तनावों को समाप्त करने के लिए सुखदायक हर्बल स्टीम चिकित्सा।'
       ]

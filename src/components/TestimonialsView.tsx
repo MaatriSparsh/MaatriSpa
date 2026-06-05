@@ -287,7 +287,7 @@ export default function TestimonialsView() {
           
           <p className="text-stone-600 text-sm sm:text-base leading-relaxed">
             {language === 'en' 
-              ? 'Every postpartum mother has an Ayurvedic labor recovery journey. From therapeutic Sutika Abhyanga to lactation coordination, browse reviews verified by our Raipur headquarters.'
+              ? 'Every postpartum mother has a personal labor recovery journey. From therapeutic Sutika Abhyanga to lactation coordination, browse reviews verified by our Raipur headquarters.'
               : 'हर माँ की प्रसव उपरांत स्वास्थ्य लाभ की अपनी यात्रा होती है। सौम्य अभ्यंग मालिश से लेकर स्तनपान मार्गदर्शन तक, हमारी रायपुर सुतिका टीम द्वारा सत्यापित अनुभवों को पढ़ें।'}
           </p>
 
@@ -712,7 +712,7 @@ export default function TestimonialsView() {
                             {language === 'en' ? s.name : s.nameHindi}
                           </option>
                         ))}
-                        <option value="Ayurvedic Abhyanga">{language === 'en' ? 'Ayurvedic Abhyanga Recovery' : 'आयुर्वेदिक अभ्यंग स्वास्थ्य लाभ'}</option>
+                        <option value="Abhyanga Recovery">{language === 'en' ? 'Abhyanga Recovery' : 'अभ्यंग स्वास्थ्य लाभ'}</option>
                         <option value="Sutika Snana Ritual">{language === 'en' ? 'Traditional Sutika Snana' : 'पारंपरिक सुतिका स्नान अनुष्ठान'}</option>
                         <option value="Lactation Counselings">{language === 'en' ? 'Expert Lactation counseling' : 'स्तनपान एवं लैक्टेशन परामर्श'}</option>
                         <option value="Infant Colic Massage">{language === 'en' ? 'Infant Massage' : 'शिशु मालिश'}</option>

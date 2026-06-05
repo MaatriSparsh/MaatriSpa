@@ -162,11 +162,11 @@ export const PRACTITIONERS: Practitioner[] = [
   {
     id: 'dr-shreya',
     name: 'Dr. Shreya Joshi (B.A.M.S)',
-    role: 'Senior Ayurvedic Pediatrician & Lactation Educator',
-    roleHindi: 'वरिष्ठ आयुर्वेदिक बाल रोग विशेषज्ञ और लैक्टेशन सलाहकार',
+    role: 'Senior Holistic Pediatrician & Lactation Educator',
+    roleHindi: 'वरिष्ठ बाल रोग विशेषज्ञ और लैक्टेशन सलाहकार',
     avatar: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=300&q=80',
-    bio: 'Dr. Shreya holds active pediatric credentials specializing in holistic neonatal protection schemes. She blends clinical medical latch analyses with ancient tri-doshic postpartum nursing guidelines to empower lactating mothers.',
-    bioHindi: 'डॉ. श्रेया के पास समग्र शिशु सुरक्षा और बाल स्वास्थ्य के सक्रिय लाइसेंस हैं। वे नैदानिक स्तनपान विश्लेषण के साथ आयुर्वेद के प्रसवोत्तर स्वास्थ्य दिशानिर्देशों को मिलाकर युवा स्तनपान कराने वाली माताओं को सशक्त बनाती हैं।',
+    bio: 'Dr. Shreya holds active pediatric credentials specializing in holistic neonatal protection schemes. She blends clinical medical latch analyses with gentle traditional postpartum nursing guidelines to empower lactating mothers.',
+    bioHindi: 'डॉ. श्रेया के पास समग्र शिशु सुरक्षा और बाल स्वास्थ्य के सक्रिय लाइसेंस हैं। वे नैदानिक स्तनपान विश्लेषण के साथ पारंपरिक प्रसवोत्तर स्वास्थ्य दिशानिर्देशों को मिलाकर युवा स्तनपान कराने वाली माताओं को सशक्त बनाती हैं।',
     rating: 4.9,
     specialties: ['Lactation Consulting', 'Neonatal Health Audits', 'Baby Digestion Colic Healing'],
     specialtiesHindi: ['स्तनपान लैक्टेशन परामर्श', 'नवजात शिशु स्वास्थ्य परीक्षण', 'शिशु पाचन और मरोड़ राहत']
