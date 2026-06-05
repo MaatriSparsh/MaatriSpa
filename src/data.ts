@@ -11,7 +11,7 @@ export const SERVICES: Service[] = [
     priceInr: 9999,
     discountedPrice: 9999,
     duration: 300,
-    image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=600&q=80',
+    image: 'https://i.ibb.co/4nhc4R1n/file-00000000972c7208a3662c08ee9a6c01.png',
     benefits: [
       'Mother Care & Lactation Training',
       'Baby Care',
@@ -38,7 +38,7 @@ export const SERVICES: Service[] = [
     priceInr: 19999,
     discountedPrice: 19999,
     duration: 600,
-    image: 'https://images.unsplash.com/photo-1519689680058-324335c77eba?auto=format&fit=crop&w=600&q=80',
+    image: 'https://i.ibb.co/27PP09bN/file-00000000bd307208ab2a44de1f6a28f4.png',
     benefits: [
       'Mother Care & Lactation Training',
       'Baby Care',
@@ -94,7 +94,7 @@ export const SERVICES: Service[] = [
     priceInr: 10999,
     discountedPrice: 10999,
     duration: 350,
-    image: 'https://images.unsplash.com/photo-1581579438747-1dc8d1e0ca96?auto=format&fit=crop&w=600&q=80',
+    image: 'https://i.ibb.co/4nhc4R1n/file-00000000972c7208a3662c08ee9a6c01.png',
     benefits: [
       'Mother Care & Lactation Training',
       'Baby Care',

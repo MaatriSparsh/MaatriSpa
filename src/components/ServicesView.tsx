@@ -49,7 +49,7 @@ export default function ServicesView({ onOpenBookingWithService }: ServicesViewP
       taglineHi: 'प्रसवोत्तर सुखदायक विश्राम और बल',
       descriptionEn: 'A luxury 7-day postpartum rehabilitation sequence designed for rapid somatic relief and gentle recovery after natural childbirth.',
       descriptionHi: 'नॉर्मल डिलीवरी के बाद माताओं के त्वरित शारीरिक उद्धार और मानसिक विश्राम के लिए 7 दिनों की सबसे पसंदीदा पारंपरिक थेरेपी।',
-      image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=600&q=80',
+      image: 'https://i.ibb.co/4nhc4R1n/file-00000000972c7208a3662c08ee9a6c01.png',
       includesEn: [
         'Mother Care & Lactation Training',
         'Baby Care',
@@ -90,7 +90,7 @@ export default function ServicesView({ onOpenBookingWithService }: ServicesViewP
       taglineHi: 'संपूर्ण सूतिका अभ्यंग और पेट बांधना',
       descriptionEn: 'The absolute gold-standard 14-day traditional Indian postnatal restoration, involving complete stomach binding and deep recovery therapies.',
       descriptionHi: '14 दिनों की पूर्ण प्रसवोत्तर रिकवरी चिकित्सा। पारंपरिक कपड़ा बांधने (बेली बाइंडिंग) और सघन थेरेपी से गर्भाशय को यथास्थान वापस लाना।',
-      image: 'https://images.unsplash.com/photo-1519689680058-324335c77eba?auto=format&fit=crop&w=600&q=80',
+      image: 'https://i.ibb.co/27PP09bN/file-00000000bd307208ab2a44de1f6a28f4.png',
       includesEn: [
         'Mother Care & Lactation Training',
         'Baby Care',
@@ -177,7 +177,7 @@ export default function ServicesView({ onOpenBookingWithService }: ServicesViewP
       taglineHi: 'सिजेरियन गतिशीलता और रीढ़ संरेखण',
       descriptionEn: 'A supportive 7-day program to help C-section mothers regain strength. Includes lactic swelling drainage, wound protection training, and posture help.',
       descriptionHi: 'सी-सेक्शन प्रसव के बाद शरीर में जकड़न को समाप्त करने और माताओं को सहज संचलन में मदद करने के लिए 7 दिनों का कल्याण कार्यक्रम।',
-      image: 'https://images.unsplash.com/photo-1581579438747-1dc8d1e0ca96?auto=format&fit=crop&w=600&q=80',
+      image: 'https://i.ibb.co/4nhc4R1n/file-00000000972c7208a3662c08ee9a6c01.png',
       includesEn: [
         'Mother Care & Lactation Training',
         'Baby Care',
