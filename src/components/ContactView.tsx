@@ -59,35 +59,35 @@ export default function ContactView() {
   const faqs = [
     {
       q: language === 'en' 
-        ? "When can I begin Sutika Abhyanga (massage) after a C-Section?" 
-        : "सिजेरियन डिलीवरी (C-Section) के कितने दिनों बाद सूतिका मालिश शुरू हो सकती है?",
+        ? "Is it safe for C-section stitches?" 
+        : "क्या यह सी-सेक्शन (C-section) के टांकों के लिए सुरक्षित है?",
       a: language === 'en'
-        ? "For vaginal births, gentle abdominal massages can start within 5-7 days. For Cesarean births, we recommend waiting 14 to 21 days for physical wound healing, and avoiding direct intense underbelly massage. We focus instead on back, leg, and neck relief during early weeks."
-        : "सामान्य प्रसव के लिए, ५ से ७ दिनों के भीतर कोमल पेट की मालिश शुरू की जा सकती है। जबकि सिजेरियन प्रसव (C-Section) के मामलों में, हम टांके ठीक होने के लिए १४ से २१ दिनों तक प्रतीक्षा करने की सलाह देते हैं और पेट के निचले हिस्से पर सीधे अत्यधिक दबाव से बचते हैं। शुरुआती हफ्तों में हम इसके बजाय पीठ, पैरों और गर्दन के दर्द से राहत देने पर ध्यान केंद्रित करते हैं।"
+        ? "Yes, absolutely safe. Our certified Sutika specialists follow strict obstetric care protocols. Gentle therapy sessions safely begin 14 to 21 days post-delivery once your doctor confirms surface wound healing. We completely avoid direct pressure over the abdominal incision during initial weeks, focusing instead on alleviating upper back strain, neck tightness, pelvic discomfort, and leg swelling. Once the scar is fully mature, specialized gentle restorative wraps are introduced."
+        : "हाँ, बिल्कुल सुरक्षित है। हमारे प्रमाणित विशेषज्ञ प्रसूति मानकों का पूर्ण पालन करते हैं। डॉक्टर की सहमति व टांकों के प्राथमिक सूखने के बाद (डिलीवरी के १४-२१ दिनों बाद) सत्र सुरक्षित रूप से शुरू किए जाते हैं। शुरुआती हफ्तों में टांके पर सीधा दबाव नहीं दिया जाता, बल्कि पीठ, कमर और पैरों के दर्द को दूर किया जाता है।"
+    },
+    {
+      q: language === 'en'
+        ? "What happens if my baby cries during the mother massage?"
+        : "यदि माँ की मालिश के दौरान शिशु रोने लगे तो क्या होता है?",
+      a: language === 'en'
+        ? "We follow a strict Baby-First Pause Policy. If your baby cries, gets hungry, or needs comfort, the session is paused immediately without rush. You can breastfeed, soothe, or hold your newborn at your leisure. Our therapists can also assist with burping, gentle swaddling, and calming techniques while you relax."
+        : "हम 'शिशु-प्रथम विराम नीति' का पालन करते हैं। यदि बच्चा रोता है या भूख से जागता है, तो सत्र तुरंत रोक दिया जाता है। आप आराम से शिशु को दूध पिला सकती हैं या शांत कर सकती हैं। हमारी प्रशिक्षित टीम भी शिशु को डकार दिलाने व लपेटने में सहयोग करती है।"
+    },
+    {
+      q: language === 'en'
+        ? "How do you maintain hygiene during home visit?"
+        : "होम विजिट के दौरान आप स्वच्छता कैसे बनाए रखते हैं?",
+      a: language === 'en'
+        ? "We enforce hospital-grade sanitation. Our therapists sanitize hands thoroughly, wear fresh clean aprons, disposable head caps, and indoor shoe covers. All brass decanters, traditional warmers, and organic cotton wraps are sterilized in single-use sealed kits. We only use pure lab-tested organic cold-pressed oils."
+        : "हम अस्पताल-स्तरीय स्वच्छता मानकों का पालन करते हैं। हमारे चिकित्सक हाथों को अच्छी तरह सैनिटाइज करते हैं, स्वच्छ एप्रन, हेड कैप और इनडोर शू-कवर पहनते हैं। सभी उपकरण व सूती रैपिंग कपड़े रोगाणुरहित (Sterilized) सीलबंद किट में लाए जाते हैं। हम केवल १००% शुद्ध व सुरक्षित जैविक तेलों का उपयोग करते हैं।"
     },
     {
       q: language === 'en'
         ? "Are the massage oils safe for newborn baby skin?"
         : "क्या मालिश के लिए प्रयुक्त तेल नवजात शिशु की संवेदनशील त्वचा के लिए सुरक्षित हैं?",
       a: language === 'en'
-        ? "Absolutely. We utilize exclusively cold-pressed organic sesame or coconut oils infused with mild traditional safe herbs (such as Bala or Ashwagandha root). They contain zero synthetic chemicals, fragrances, parabens, or heavy elements."
-        : "बिल्कुल। हम केवल शुद्ध कोल्ड-प्रेस्ड जैविक तिल या नारियल तेलों का उपयोग करते हैं, जिनमें बहुत सौम्य प्राकृतिक जड़ी-बूटियों (जैसे बला या अश्वगंधा जड़) का अर्क मिलाया जाता है। इनमें कोई कृत्रिम रसायन, भारी तत्व या कृत्रिम सुगंध नहीं होती।"
-    },
-    {
-      q: language === 'en'
-        ? "Do you supply the belly binder wrap bands and medicated water?"
-        : "क्या आपके पैकेज में बेली बाइंडिंग कपड़ा (पेट बांधने की पट्टी) और औषधीय जल शामिल है?",
-      a: language === 'en'
-        ? "Yes! All MaatriSparsh home care sessions are fully inclusive. Our specialist brings sterilized organic cotton belly wrapping wraps, the necessary medicated oil decanters, and herbal Snana wash baths to prepare of your newborn."
-        : "हाँ! मातृस्पर्श के सभी होम केयर पैकेज पूर्ण रूप से समावेशी हैं। हमारे विशेषज्ञ थेरेपिस्ट अपने साथ रोगाणुरहित (Sterilized) सूती कपड़ा बेली रैप, आवश्यक औषधीय तेल, और नवजात शिशु के स्नान के लिए विशेष उबटन व जड़ी-बूटी स्नान सामग्री लेकर आते हैं।"
-    },
-    {
-      q: language === 'en'
-        ? "Do your lactation pediatricians travel for urgent home-calls?"
-        : "क्या आपके स्तनपान और बाल रोग सलाहकार आपातकालीन होम-विजिट पर आते हैं?",
-      a: language === 'en'
-        ? "Yes. All breastfeeding, nursing latching consultations, and infant colic assessment remedies can be scheduled as an comfortable in-home visit or at our warm clinic sanctum."
-        : "जी हाँ। स्तनपान सुधारने, बच्चे के लैचिंग संरेखण और शिशु के तेज पेट दर्द के आपातकालीन उपचार के लिए हमारे योग्य सलाहकार आपके घर पर आकर मार्गदर्शन दे सकते हैं।"
+        ? "Absolutely. We utilize exclusively cold-pressed organic sesame or virgin coconut oils infused with mild traditional herbs (like Bala and Ashwagandha). They contain zero synthetic chemicals, artificial fragrances, parabens, or heavy elements."
+        : "बिल्कुल। हम केवल शुद्ध कोल्ड-प्रेस्ड जैविक तिल या नारियल तेलों का उपयोग करते हैं, जिनमें बहुत सौम्य प्राकृतिक जड़ी-बूटियों का अर्क मिलाया जाता है। इनमें कोई कृत्रिम रसायन, भारी तत्व या कृत्रिम सुगंध नहीं होती।"
     }
   ];
 

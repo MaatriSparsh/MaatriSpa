@@ -5,6 +5,7 @@ import { Service } from '../types';
 import { SERVICES as STATIC_SERVICES } from '../data';
 import { useFirebase } from './FirebaseProvider';
 import { useLanguage } from './LanguageProvider';
+import FAQSection from './FAQSection';
 
 // Helper functions for storing and retrieving the video to/from IndexedDB
 const openVideoDB = (): Promise<IDBDatabase> => {
@@ -1259,6 +1260,9 @@ export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: 
           </div>
         </div>
       </section>
+
+      {/* Frequently Asked Questions Section */}
+      <FAQSection onOpenBooking={() => onNavigateToTab('contact')} />
 
     </div>
   );
