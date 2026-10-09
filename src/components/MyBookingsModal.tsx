@@ -1,13 +1,14 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useFirebase } from './FirebaseProvider';
-import { X, Calendar, User, Clock, Check, RefreshCw, XCircle, FileText, Heart, ShieldAlert } from 'lucide-react';
+import { X, Calendar, User, Clock, Check, RefreshCw, XCircle, FileText, Heart, ShieldAlert, Activity } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface MyBookingsModalProps {
   onClose: () => void;
+  onNavigateToWellness?: () => void;
 }
 
-export default function MyBookingsModal({ onClose }: MyBookingsModalProps) {
+export default function MyBookingsModal({ onClose, onNavigateToWellness }: MyBookingsModalProps) {
   const { bookings, cancelBookingInFirestore, userProfile, updateUserProfile } = useFirebase();
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
@@ -137,6 +138,20 @@ export default function MyBookingsModal({ onClose }: MyBookingsModalProps) {
               <User className="h-4 w-4 shrink-0 text-emerald-850" />
               <span>My Profile Details</span>
             </button>
+            {onNavigateToWellness && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onNavigateToWellness();
+                }}
+                className="flex-1 flex items-center justify-center space-x-1.5 py-2 px-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer text-emerald-850 hover:bg-emerald-50 hover:text-emerald-950 border border-transparent hover:border-emerald-200"
+                title="Open Daily Postpartum Recovery Tracker"
+              >
+                <Activity className="h-4 w-4 shrink-0 text-emerald-800" />
+                <span>Recovery Tracker</span>
+              </button>
+            )}
           </div>
 
           {localError && (

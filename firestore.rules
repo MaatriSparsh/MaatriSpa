@@ -127,6 +127,11 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // TEST HEALTH CHECK MATCH
+    match /test/connection {
+      allow read: if true;
+    }
+
     // OCCUPIED SLOTS MATCH (Securely public to read, verified users write)
     match /occupiedSlots/{slotId} {
       allow read: if true;
@@ -177,6 +182,19 @@ service cloud.firestore {
           )
         );
       allow delete: if isSignedIn() && isAdmin();
+    }
+
+    // WELLNESS LOGS MATCH (Logged-in mothers log daily recovery milestones: sleep, lactation, infant mood)
+    match /wellnessLogs/{logId} {
+      allow read: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
+      allow create: if isSignedIn()
+        && isValidId(logId)
+        && incoming().userId == request.auth.uid;
+      allow update: if isSignedIn()
+        && isValidId(logId)
+        && (isAdmin() || (resource.data.userId == request.auth.uid && incoming().userId == request.auth.uid));
+      allow delete: if isSignedIn()
+        && (isAdmin() || resource.data.userId == request.auth.uid);
     }
   }
 }

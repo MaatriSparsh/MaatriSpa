@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { ArrowRight, Leaf, Heart, Star, Sparkles, Smile, Baby, Calendar, Play, Pause, Volume2, VolumeX, Upload, RotateCcw, Trash2, Check, Tag, ChevronDown, ChevronUp, Info, Percent, Shield } from 'lucide-react';
+import { ArrowRight, Leaf, Heart, Star, Sparkles, Smile, Baby, Calendar, Play, Pause, Volume2, VolumeX, Upload, RotateCcw, Trash2, Check, Tag, ChevronDown, ChevronUp, Info, Percent, Shield, Activity, Moon } from 'lucide-react';
 import { Service } from '../types';
 import { SERVICES as STATIC_SERVICES } from '../data';
 import { useFirebase } from './FirebaseProvider';
@@ -1206,6 +1206,56 @@ export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: 
               <span>{language === 'en' ? "View All Real-time Testimonials" : "सभी माताओं के अनुभव देखें"}</span>
               <ArrowRight className="h-4 w-4" />
             </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Interactive Postpartum & Infant Recovery Tracker Spotlight */}
+      <section className="py-14 sm:py-20 bg-gradient-to-b from-stone-50 via-emerald-950/[0.03] to-stone-50 border-t border-b border-stone-200/60" id="wellness-tracker-spotlight">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="rounded-3xl bg-gradient-to-br from-emerald-950 via-stone-900 to-emerald-900 text-stone-100 p-8 sm:p-12 shadow-xl border border-emerald-900/40 relative overflow-hidden">
+            <div className="absolute top-0 right-0 -mt-10 -mr-10 h-72 w-72 rounded-full bg-emerald-700/10 blur-3xl pointer-events-none" />
+            <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8">
+              <div className="space-y-4 max-w-2xl text-center lg:text-left">
+                <div className="inline-flex items-center space-x-2 rounded-full bg-amber-400/20 border border-amber-400/30 px-3.5 py-1 text-xs font-serif font-bold text-amber-300">
+                  <Activity className="h-3.5 w-3.5 text-amber-300" />
+                  <span>{language === 'en' ? 'Interactive Postpartum Sanctuary' : 'सूतिका दैनिक आरोग्य एवं संवर्धन'}</span>
+                </div>
+                <h3 className="font-serif text-2xl sm:text-4xl font-extrabold tracking-tight text-white leading-tight">
+                  {language === 'en' ? 'Track Daily Maternal Sleep, Lactation & Infant Mood' : 'दैनिक मातृत्व नींद, स्तनपान एवं शिशु के मूड का रेखाचित्र'}
+                </h3>
+                <p className="text-xs sm:text-sm text-stone-300 leading-relaxed">
+                  {language === 'en'
+                    ? 'Log each day\'s recovery milestones in seconds. Visualize your restorative progress with interactive trend charts, monitor infant feeding rhythm, and access personalized Ayurvedic Sutika recommendations.'
+                    : 'प्रतिदिन अपनी रिकवरी के मील के पत्थर दर्ज करें। इंटरैक्टिव लाइन चार्ट के माध्यम से नींद, स्तनपान और शिशु के मूड के रुझान देखें तथा व्यक्तिगत आयुर्वेदिक सलाह प्राप्त करें।'}
+                </p>
+                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 pt-2 text-xs font-mono text-emerald-300">
+                  <span className="flex items-center space-x-1.5 bg-emerald-900/60 px-3 py-1.5 rounded-full border border-emerald-700/40">
+                    <Moon className="h-3.5 w-3.5 text-emerald-400" />
+                    <span>{language === 'en' ? 'Sleep Hours' : 'नींद अवधि'}</span>
+                  </span>
+                  <span className="flex items-center space-x-1.5 bg-amber-900/40 px-3 py-1.5 rounded-full border border-amber-700/40 text-amber-300">
+                    <Heart className="h-3.5 w-3.5 text-amber-400" />
+                    <span>{language === 'en' ? 'Nursing Frequency' : 'स्तनपान आवृत्ति'}</span>
+                  </span>
+                  <span className="flex items-center space-x-1.5 bg-rose-900/40 px-3 py-1.5 rounded-full border border-rose-700/40 text-rose-300">
+                    <Smile className="h-3.5 w-3.5 text-rose-400" />
+                    <span>{language === 'en' ? 'Infant Mood Score' : 'शिशु मूड'}</span>
+                  </span>
+                </div>
+              </div>
+
+              <div className="shrink-0 flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={() => onNavigateToTab('wellness')}
+                  className="inline-flex items-center justify-center space-x-2.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-stone-950 font-bold px-8 py-4 text-xs sm:text-sm uppercase tracking-wider shadow-lg shadow-amber-900/20 active:scale-95 transition-all cursor-pointer"
+                >
+                  <Activity className="h-4 w-4 text-stone-950 stroke-[3]" />
+                  <span>{language === 'en' ? 'Launch Wellness Tracker' : 'स्वास्थ्य ट्रैकर खोलें'}</span>
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </section>

@@ -45,6 +45,8 @@ export interface TranslationSet {
   categoryWorkshop: string;
   adminPortal: string;
   totalBookings: string;
+  tabWellness: string;
+  wellnessTracker: string;
 }
 
 export const translations: Record<'en' | 'hi', TranslationSet> = {
@@ -95,6 +97,8 @@ export const translations: Record<'en' | 'hi', TranslationSet> = {
     categoryWorkshop: "Caregiver Workshops",
     adminPortal: "Admin Portal",
     totalBookings: "Total Bookings Found",
+    tabWellness: "Recovery Tracker",
+    wellnessTracker: "Postpartum Wellness Tracker",
   },
   hi: {
     welcome: "मातृस्पर्श: प्रसवोत्तर मातृ और नवजात शिशु कल्याण केंद्र",
@@ -143,5 +147,7 @@ export const translations: Record<'en' | 'hi', TranslationSet> = {
     categoryWorkshop: "देखभालकर्ता कार्यशालाएं",
     adminPortal: "प्रशासक पोर्टल",
     totalBookings: "कुल बुकिंग पाई गई",
+    tabWellness: "रिकवरी ट्रैकर",
+    wellnessTracker: "दैनिक प्रसवोत्तर स्वास्थ्य ट्रैकर",
   }
 };

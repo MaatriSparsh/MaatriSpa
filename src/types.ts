@@ -135,3 +135,24 @@ export interface Review {
   createdAt: string;
 }
 
+export type InfantMoodType = 'Happy & Content' | 'Playful & Alert' | 'Sleepy & Peaceful' | 'Fussy & Gassy' | 'Colicky & Crying';
+export type SleepQualityType = 'Restful' | 'Fair' | 'Fragmented' | 'Exhausted';
+export type LactationComfortType = 'Pain-Free & Smooth' | 'Comfortable' | 'Mild Engorgement' | 'Tender & Sore';
+
+export interface WellnessMilestone {
+  id: string; // e.g. "wm_2026-10-09" or UUID
+  userId: string;
+  date: string; // YYYY-MM-DD
+  sleepHours: number; // e.g., 2 - 14
+  sleepQuality: SleepQualityType;
+  lactationSessions: number; // e.g., 0 - 16
+  lactationComfort: LactationComfortType;
+  infantMood: InfantMoodType;
+  infantMoodScore: number; // 1 to 5 numeric for charts
+  maternalVitality: number; // 1 to 5 scale
+  waterGlasses: number; // 4 to 15
+  specialMilestones?: string[];
+  healingNotes?: string;
+  createdAt: string;
+}
+

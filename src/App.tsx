@@ -12,6 +12,7 @@ import AuthModal from './components/AuthModal';
 import MyBookingsModal from './components/MyBookingsModal';
 import AdminPortalModal from './components/AdminPortalModal';
 import EmailVerificationPending from './components/EmailVerificationPending';
+import WellnessTracker from './components/WellnessTracker';
 import { Booking } from './types';
 import { motion, AnimatePresence } from 'motion/react';
 import { TicketCheck, Flower2 } from 'lucide-react';
@@ -253,6 +254,15 @@ export default function App() {
               {activeTab === 'services' && (
                 <ServicesView onOpenBookingWithService={handleOpenBookingWithService} />
               )}
+              {activeTab === 'wellness' && (
+                <WellnessTracker
+                  onOpenAuth={() => {
+                    setShouldOpenBookingAfterAuth(false);
+                    setIsAuthOpen(true);
+                  }}
+                  onOpenBooking={handleOpenGeneralBooking}
+                />
+              )}
               {activeTab === 'testimonials' && <TestimonialsView />}
               {activeTab === 'contact' && <ContactView />}
             </motion.div>
@@ -302,6 +312,10 @@ export default function App() {
         {isDashboardOpen && (
           <MyBookingsModal
             onClose={() => setIsDashboardOpen(false)}
+            onNavigateToWellness={() => {
+              setIsDashboardOpen(false);
+              setActiveTab('wellness');
+            }}
           />
         )}
         {isAdminPortalOpen && (

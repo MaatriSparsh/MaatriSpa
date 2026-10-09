@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Menu, X, Calendar, User, LogOut, BookOpen, Globe } from 'lucide-react';
+import { Menu, X, Calendar, User, LogOut, BookOpen, Globe, Activity } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useFirebase } from './FirebaseProvider';
 import { useLanguage } from './LanguageProvider';
@@ -62,6 +62,7 @@ export default function Header({ activeTab, setActiveTab, onOpenBooking, onOpenA
     { id: 'home', label: t.tabHome },
     { id: 'about', label: t.tabAbout },
     { id: 'services', label: t.tabServices },
+    { id: 'wellness', label: t.tabWellness },
     { id: 'testimonials', label: t.tabTestimonials },
     { id: 'contact', label: t.tabContact },
   ];
@@ -141,6 +142,20 @@ export default function Header({ activeTab, setActiveTab, onOpenBooking, onOpenA
                   <span>Admin</span>
                 </button>
               )}
+              {/* Daily Postpartum Recovery Tracker shortcut */}
+              <button
+                onClick={() => setActiveTab('wellness')}
+                className={`flex items-center space-x-1.5 rounded-full border px-3.5 py-2 text-xs font-bold uppercase tracking-wider transition cursor-pointer ${
+                  activeTab === 'wellness'
+                    ? 'border-emerald-850 bg-emerald-50 text-emerald-950 shadow-xs'
+                    : 'border-stone-200 hover:bg-stone-105 bg-white text-stone-700'
+                }`}
+                title="Log Daily Sleep, Lactation, and Infant Mood"
+              >
+                <Activity className="h-3.5 w-3.5 text-emerald-800 shrink-0" />
+                <span>{t.tabWellness}</span>
+              </button>
+
               {/* Mother dashboard shortcuts */}
               <button
                 onClick={onOpenDashboard}
@@ -268,6 +283,16 @@ export default function Header({ activeTab, setActiveTab, onOpenBooking, onOpenA
                         <span>{language === 'en' ? 'Admin Portal' : 'एडमिन पोर्टल'}</span>
                       </button>
                     )}
+                    <button
+                      onClick={() => {
+                        setIsOpen(false);
+                        setActiveTab('wellness');
+                      }}
+                      className="flex w-full items-center justify-center space-x-2 rounded-xl border border-emerald-200 bg-emerald-50/60 py-3 text-sm font-semibold text-emerald-900 hover:bg-emerald-100 cursor-pointer"
+                    >
+                      <Activity className="h-4.5 w-4.5 text-emerald-800" />
+                      <span>{t.tabWellness}</span>
+                    </button>
                     <button
                       onClick={() => {
                         setIsOpen(false);
