@@ -78,16 +78,16 @@ export default function Header({ activeTab, setActiveTab, onOpenBooking, onOpenA
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-stone-200/80 bg-stone-50/90 backdrop-blur-md">
-      <div className="mx-auto flex max-w-7xl h-22 items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex max-w-7xl h-22 items-center justify-between gap-4 sm:gap-6 lg:gap-8 px-4 sm:px-6 lg:px-8">
         
         {/* Logo and Brand Title representing postpartum and newborn protection */}
         <div 
-          className="flex cursor-pointer items-center space-x-3 sm:space-x-4" 
+          className="flex cursor-pointer items-center gap-3 sm:gap-3.5 md:gap-4 shrink-0 -ml-1 sm:-ml-2 lg:-ml-3 mr-auto md:mr-6 lg:mr-8" 
           onClick={() => setActiveTab('home')}
           id="brand-logo"
         >
           <ElegantLogo />
-          <div>
+          <div className="flex flex-col justify-center">
             <span className="font-serif text-2xl sm:text-3xl font-bold tracking-tight bg-gradient-to-r from-[#DFB15B] via-[#C59B27] to-[#8A6D1C] bg-clip-text text-transparent leading-none block select-none">
               MaatriSparsh
             </span>
@@ -98,7 +98,7 @@ export default function Header({ activeTab, setActiveTab, onOpenBooking, onOpenA
         </div>
 
         {/* Desktop Navigation Links */}
-        <nav className="hidden md:flex space-x-7" id="desktop-nav">
+        <nav className="hidden md:flex items-center space-x-5 lg:space-x-7 shrink-0" id="desktop-nav">
           {navItems.map((item) => (
             <button
               key={item.id}
