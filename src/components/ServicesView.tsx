@@ -370,16 +370,13 @@ export default function ServicesView({ onOpenBookingWithService }: ServicesViewP
                           className="relative bg-white rounded-2xl border border-stone-200/80 p-5 sm:p-6 shadow-xs flex flex-col justify-between group hover:border-[#C59B27] hover:shadow-md hover:shadow-[#C59B27]/5 hover:-translate-y-0.5 transition-all duration-300"
                         >
                           <div>
-                            {/* Card Image and Duration */}
+                            {/* Card Image */}
                             <div className="relative h-44 w-full rounded-2xl overflow-hidden bg-stone-100 mb-5 border border-stone-200/50">
                               <img
                                 src={pkg.image}
                                 alt={language === 'en' ? pkg.nameEn : pkg.nameHi}
                                 className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
                               />
-                              <div className="absolute top-3 left-3 bg-[#C59B27] text-white py-0.5 px-3 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm">
-                                {language === 'en' ? pkg.durationEn : pkg.durationHi}
-                              </div>
                             </div>
 
                             {/* Title & Tagline */}
@@ -513,16 +510,13 @@ export default function ServicesView({ onOpenBookingWithService }: ServicesViewP
                           className="relative bg-white rounded-2xl border border-stone-200/80 p-5 shadow-xs flex flex-col justify-between group hover:border-[#C59B27] hover:shadow-md hover:shadow-[#C59B27]/5 hover:-translate-y-0.5 transition-all duration-300"
                         >
                           <div>
-                            {/* Card Image and Duration */}
+                            {/* Card Image */}
                             <div className="relative h-40 w-full rounded-2xl overflow-hidden bg-stone-100 mb-4 border border-stone-200/50">
                               <img
                                 src={pkg.image}
                                 alt={language === 'en' ? pkg.nameEn : pkg.nameHi}
                                 className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
                               />
-                              <div className="absolute top-3 left-3 bg-[#C59B27] text-white py-0.5 px-3 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm">
-                                {language === 'en' ? pkg.durationEn : pkg.durationHi}
-                              </div>
                             </div>
 
                             {/* Title & Tagline */}
