@@ -1055,9 +1055,7 @@ export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: 
                       className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
                       referrerPolicy="no-referrer"
                     />
-                    <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-xs px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider text-emerald-800 border border-stone-200">
-                      {service.category.replace('_', ' ')}
-                    </div>
+
                   </div>
                   <div className="p-5 space-y-2.5">
                     <h3 className="text-lg font-bold text-stone-900 font-serif leading-tight">

@@ -49,7 +49,7 @@ export default function ServicesView({ onOpenBookingWithService }: ServicesViewP
       taglineHi: 'प्रसवोत्तर सुखदायक विश्राम और बल',
       descriptionEn: 'A luxury 7-day postpartum rehabilitation sequence designed for rapid somatic relief and gentle recovery after natural childbirth.',
       descriptionHi: 'नॉर्मल डिलीवरी के बाद माताओं के त्वरित शारीरिक उद्धार और मानसिक विश्राम के लिए 7 दिनों की सबसे पसंदीदा पारंपरिक थेरेपी।',
-      image: 'https://i.ibb.co/4nhc4R1n/file-00000000972c7208a3662c08ee9a6c01.png',
+      image: '/src/assets/images/regenerated_image_1791754192229.png',
       includesEn: [
         'Mother Care & Lactation Training',
         'Baby Care',
@@ -138,7 +138,7 @@ export default function ServicesView({ onOpenBookingWithService }: ServicesViewP
       taglineHi: 'सी-सेक्शन टांकों की सुरक्षा और गतिशीलता',
       descriptionEn: 'A highly delicate and supportive 4-day intensive care sequence centered strictly on surgical incision safety, posture alignment, and safe recovery.',
       descriptionHi: 'सिजेरियन डिलीवरी के तुरंत बाद, टांकों को बिना नुकसान पहुंचाए मांसपेशियों को आराम देने और पीठ दर्द कम करने के लिए 4 दिनों का सघन पैकेज।',
-      image: 'https://images.unsplash.com/photo-1516627145497-ae6968895b74?auto=format&fit=crop&w=600&q=80',
+      image: '/src/assets/images/regenerated_image_1791753109553.png',
       includesEn: [
         'Mother Care',
         'Baby Care',
@@ -177,7 +177,7 @@ export default function ServicesView({ onOpenBookingWithService }: ServicesViewP
       taglineHi: 'सिजेरियन गतिशीलता और रीढ़ संरेखण',
       descriptionEn: 'A supportive 7-day program to help C-section mothers regain strength. Includes lactic swelling drainage, wound protection training, and posture help.',
       descriptionHi: 'सी-सेक्शन प्रसव के बाद शरीर में जकड़न को समाप्त करने और माताओं को सहज संचलन में मदद करने के लिए 7 दिनों का कल्याण कार्यक्रम।',
-      image: 'https://i.ibb.co/4nhc4R1n/file-00000000972c7208a3662c08ee9a6c01.png',
+      image: '/src/assets/images/regenerated_image_1791752693993.png',
       includesEn: [
         'Mother Care & Lactation Training',
         'Baby Care',
@@ -220,7 +220,7 @@ export default function ServicesView({ onOpenBookingWithService }: ServicesViewP
       taglineHi: 'सी-सेक्शन विशिष्ट संपूर्ण आरोग्यता',
       descriptionEn: 'The absolute gold-standard 14-day fully integrated C-section rehabilitation package with customized medical supervision and professional spa support.',
       descriptionHi: '14 दिनों की सी-सेक्शन विशिष्ट संपूर्ण शारीरिक एवं भावनात्मक कल्याण प्रणाली। इसमें क्लिनिकल नर्स विजिट और संपूर्ण स्पा सुख शामिल हैं।',
-      image: 'https://images.unsplash.com/photo-1505252585461-04db1eb84625?auto=format&fit=crop&w=600&q=80',
+      image: '/src/assets/images/regenerated_image_1791753471699.png',
       includesEn: [
         'Mother Care & Lactation Training',
         'Baby Care',
@@ -376,6 +376,7 @@ export default function ServicesView({ onOpenBookingWithService }: ServicesViewP
                                 src={pkg.image}
                                 alt={language === 'en' ? pkg.nameEn : pkg.nameHi}
                                 className="w-full h-full object-contain group-hover:scale-102 transition-transform duration-500"
+                                referrerPolicy="no-referrer"
                               />
                             </div>
 
