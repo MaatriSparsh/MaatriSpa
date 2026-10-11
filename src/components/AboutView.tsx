@@ -83,9 +83,9 @@ export default function AboutView() {
             <div className="absolute -inset-2.5 rounded-3xl border border-stone-200 bg-stone-100/50" />
             <div className="relative overflow-hidden rounded-2xl shadow-md border border-stone-200 bg-white">
               <img
-                src="https://images.unsplash.com/photo-1516627145497-ae6968895b74?auto=format&fit=crop&w=600&q=80"
-                alt="Nutritional consultation and supportive lactation workspace"
-                className="w-full h-[280.5px] sm:h-[320px] object-cover"
+                src="/src/assets/images/breastfeeding_guidance_poster_1791752109689.jpg"
+                alt="Breastfeeding Success with Expert Guidance - Comprehensive Care & Lactation Support Guide"
+                className="w-full h-auto object-contain block"
                 referrerPolicy="no-referrer"
               />
             </div>
