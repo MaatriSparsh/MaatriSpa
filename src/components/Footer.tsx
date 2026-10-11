@@ -107,8 +107,8 @@ export default function Footer({ setActiveTab, onOpenBooking }: FooterProps) {
               <li className="flex items-start space-x-2.5">
                 <MapPin className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
                 <span className="leading-snug">
-                  Unit 2. Govind Kunj, 1st floor,<br />
-                  near icici bank, civil lines, Raipur, Chhattishgarg, 492001
+                  Govind Kunj,<br />
+                  civil lines, Raipur, Chhattishgarg, 492001
                 </span>
               </li>
               <li className="flex items-center space-x-2.5">

@@ -371,11 +371,11 @@ export default function ServicesView({ onOpenBookingWithService }: ServicesViewP
                         >
                           <div>
                             {/* Card Image */}
-                            <div className="relative h-44 w-full rounded-2xl overflow-hidden bg-stone-100 mb-5 border border-stone-200/50">
+                            <div className="relative h-52 sm:h-60 w-full rounded-2xl overflow-hidden bg-stone-50 mb-5 border border-stone-200/50 flex items-center justify-center p-1.5">
                               <img
                                 src={pkg.image}
                                 alt={language === 'en' ? pkg.nameEn : pkg.nameHi}
-                                className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
+                                className="w-full h-full object-contain group-hover:scale-102 transition-transform duration-500"
                               />
                             </div>
 
