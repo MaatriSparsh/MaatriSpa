@@ -1054,6 +1054,12 @@ export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: 
                       alt={language === 'en' ? service.name : service.nameHindi}
                       className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
                       referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        if (service.id === 'normal-sukoon-7' && !e.currentTarget.dataset.fallbackTried) {
+                          e.currentTarget.dataset.fallbackTried = 'true';
+                          e.currentTarget.src = 'https://lh3.googleusercontent.com/d/1KbbOXI-N1AJO2Daq-ISCG-Jb2MviYvrw';
+                        }
+                      }}
                     />
 
                   </div>
