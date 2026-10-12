@@ -527,6 +527,13 @@ export default function ServicesView({ onOpenBookingWithService }: ServicesViewP
                                 src={pkg.image}
                                 alt={language === 'en' ? pkg.nameEn : pkg.nameHi}
                                 className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
+                                referrerPolicy="no-referrer"
+                                onError={(e) => {
+                                  if (pkg.id === 'lscs-navya-4' && !e.currentTarget.dataset.fallbackTried) {
+                                    e.currentTarget.dataset.fallbackTried = 'true';
+                                    e.currentTarget.src = 'https://lh3.googleusercontent.com/d/1dwvl_10gArImm5mDAXW3W6K67km9-yh8';
+                                  }
+                                }}
                               />
                             </div>
 
