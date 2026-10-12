@@ -1,3 +1,26 @@
+export const CARE_PACKAGE_IMAGES: Record<string, { image: string; fallback: string }> = {
+  'normal-sukoon-7': {
+    image: '/src/assets/images/sukoon_saptah_7day_new.png',
+    fallback: 'https://lh3.googleusercontent.com/d/1KbbOXI-N1AJO2Daq-ISCG-Jb2MviYvrw'
+  },
+  'normal-puran-14': {
+    image: 'https://i.ibb.co/27PP09bN/file-00000000bd307208ab2a44de1f6a28f4.png',
+    fallback: 'https://i.ibb.co/27PP09bN/file-00000000bd307208ab2a44de1f6a28f4.png'
+  },
+  'lscs-navya-4': {
+    image: '/src/assets/images/shodasha_samskara_new.png',
+    fallback: 'https://lh3.googleusercontent.com/d/1dwvl_10gArImm5mDAXW3W6K67km9-yh8'
+  },
+  'lscs-sukoon-7': {
+    image: '/src/assets/images/lscs_sukoon_7_new.png',
+    fallback: 'https://lh3.googleusercontent.com/d/10Z4zbLv4kQMkdCROR8McfNmMa1Oh6bUQ'
+  },
+  'lscs-puran-14': {
+    image: '/src/assets/images/lscs_puran_14_new.png',
+    fallback: 'https://lh3.googleusercontent.com/d/1nUwYHCB3V-g_jDlEeMCu0Pnh30miTTG6'
+  }
+};
+
 import { Service, Practitioner, Feedback, Coupon } from './types';
 
 export const SERVICES: Service[] = [

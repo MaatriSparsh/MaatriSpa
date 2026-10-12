@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { ArrowRight, Leaf, Heart, Star, Sparkles, Smile, Baby, Calendar, Play, Pause, Volume2, VolumeX, Upload, RotateCcw, Trash2, Check, Tag, ChevronDown, ChevronUp, Info, Percent, Shield, Activity, Moon } from 'lucide-react';
 import { Service } from '../types';
-import { SERVICES as STATIC_SERVICES } from '../data';
+import { SERVICES as STATIC_SERVICES, CARE_PACKAGE_IMAGES } from '../data';
 import { useFirebase } from './FirebaseProvider';
 import { useLanguage } from './LanguageProvider';
 import FAQSection from './FAQSection';
@@ -681,7 +681,10 @@ export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: 
                   </label>
                   <div className="grid grid-cols-2 gap-3">
                     <button
-                      onClick={() => setDeliveryType('normal')}
+                      onClick={() => {
+                        setDeliveryType('normal');
+                        setSelectedMMServiceId('normal-sukoon-7');
+                      }}
                       className={`text-center p-3.5 rounded-2xl border text-xs font-bold tracking-wide transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
                         deliveryType === 'normal'
                           ? 'border-emerald-800 bg-emerald-50/70 text-emerald-950 ring-2 ring-emerald-800/15'
@@ -692,7 +695,10 @@ export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: 
                       <span>{language === 'en' ? 'Normal Delivery Care' : 'नॉर्मल डिलीवरी केयर'}</span>
                     </button>
                     <button
-                      onClick={() => setDeliveryType('lscs')}
+                      onClick={() => {
+                        setDeliveryType('lscs');
+                        setSelectedMMServiceId('lscs-sukoon-7');
+                      }}
                       className={`text-center p-3.5 rounded-2xl border text-xs font-bold tracking-wide transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
                         deliveryType === 'lscs'
                           ? 'border-emerald-800 bg-emerald-50/70 text-emerald-950 ring-2 ring-emerald-800/15'
@@ -772,30 +778,48 @@ export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: 
                     .filter(s => deliveryType === 'normal' ? s.id.startsWith('normal') : s.id.startsWith('lscs'))
                     .map((s) => {
                       const isSelected = selectedMMServiceId === s.id;
+                      const pkgImg = CARE_PACKAGE_IMAGES[s.id]?.image || s.image;
+                      const pkgFallback = CARE_PACKAGE_IMAGES[s.id]?.fallback || s.image;
                       return (
                         <div
                           key={s.id}
                           onClick={() => setSelectedMMServiceId(s.id)}
-                          className={`p-3.5 rounded-2xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between group ${
+                          className={`p-3 rounded-2xl border text-left transition-all duration-200 cursor-pointer flex gap-3 group ${
                             isSelected 
-                              ? 'border-emerald-800 bg-emerald-50/40 ring-1 ring-emerald-800' 
-                              : 'border-stone-200 hover:border-stone-300 hover:shadow-xs bg-stone-50/50'
+                              ? 'border-emerald-800 bg-emerald-50/50 ring-2 ring-emerald-800/30 shadow-xs' 
+                              : 'border-stone-200 hover:border-stone-300 hover:shadow-xs bg-stone-50/40'
                           }`}
                         >
-                          <div>
-                            <div className="flex justify-between items-start gap-1 pb-1">
-                              <h4 className="text-xs font-bold text-stone-900 group-hover:text-emerald-900 transition-colors font-serif line-clamp-1">
-                                {language === 'en' ? s.name.split(' - ')[0] : s.nameHindi.split(' - ')[0]}
-                              </h4>
-                              {isSelected && <span className="bg-emerald-800 text-white p-0.5 rounded-full text-[8px] animate-pulse">✓</span>}
-                            </div>
-                            <p className="text-[10px] text-stone-500 line-clamp-2 leading-relaxed">
-                              {language === 'en' ? s.description : s.descriptionHindi}
-                            </p>
+                          <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-stone-200 bg-stone-100 relative">
+                            <img
+                              src={pkgImg}
+                              alt={s.name}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              referrerPolicy="no-referrer"
+                              onError={(e) => {
+                                if (pkgFallback && !e.currentTarget.dataset.fallbackTried) {
+                                  e.currentTarget.dataset.fallbackTried = 'true';
+                                  e.currentTarget.src = pkgFallback;
+                                }
+                              }}
+                            />
                           </div>
-                          <div className="pt-2.5 mt-2 border-t border-stone-200/50 flex justify-between items-baseline text-[11px] font-mono">
-                            <span className="text-stone-400">⏱ {s.duration} mins</span>
-                            <span className="font-extrabold text-[#a16207]">₹{s.priceInr.toLocaleString('en-IN')}</span>
+                          <div className="flex-1 min-w-0 flex flex-col justify-between">
+                            <div>
+                              <div className="flex justify-between items-start gap-1 pb-0.5">
+                                <h4 className="text-xs font-bold text-stone-900 group-hover:text-emerald-900 transition-colors font-serif truncate">
+                                  {language === 'en' ? s.name.split(' - ')[0] : s.nameHindi.split(' - ')[0]}
+                                </h4>
+                                {isSelected && <span className="bg-emerald-800 text-white p-0.5 rounded-full text-[8px] animate-pulse">✓</span>}
+                              </div>
+                              <p className="text-[10px] text-stone-500 line-clamp-2 leading-relaxed">
+                                {language === 'en' ? s.description : s.descriptionHindi}
+                              </p>
+                            </div>
+                            <div className="pt-1.5 mt-1 border-t border-stone-200/50 flex justify-between items-baseline text-[10.5px] font-mono">
+                              <span className="text-stone-400">⏱ {s.duration} mins</span>
+                              <span className="font-extrabold text-[#a16207]">₹{s.priceInr.toLocaleString('en-IN')}</span>
+                            </div>
                           </div>
                         </div>
                       );
@@ -807,7 +831,10 @@ export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: 
 
             {/* Dynamic Package Reader & Price Calculations Column (Right Side - Deep Dive) */}
             {(() => {
-              const currentMMService = activeServices.find(s => s.id === selectedMMServiceId) || activeServices[0];
+              const filteredServices = activeServices.filter(s => deliveryType === 'normal' ? s.id.startsWith('normal') : s.id.startsWith('lscs'));
+              const currentMMService = filteredServices.find(s => s.id === selectedMMServiceId) || filteredServices[0] || activeServices[0];
+              const currentPackageImg = CARE_PACKAGE_IMAGES[currentMMService.id]?.image || currentMMService.image;
+              const currentPackageFallback = CARE_PACKAGE_IMAGES[currentMMService.id]?.fallback || currentMMService.image;
               
               // Calculate discount logic:
               const originalPrice = currentMMService.priceInr;
@@ -835,25 +862,39 @@ export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: 
                 <div className="lg:col-span-5 bg-gradient-to-br from-stone-900 via-stone-950 to-stone-900 text-stone-100 p-5 sm:p-8 flex flex-col justify-between border-t lg:border-t-0 lg:border-l border-stone-850">
                   <div className="space-y-5">
                     
-                    {/* Header badge with image backdrop */}
-                    <div className="relative rounded-2xl overflow-hidden h-36 bg-stone-900 border border-stone-800">
+                    {/* Header badge with image showcase according to care package */}
+                    <div className="relative rounded-2xl overflow-hidden h-44 sm:h-48 bg-stone-900 border border-stone-800 shadow-inner group">
                       <img 
-                        src={currentMMService.image} 
+                        src={currentPackageImg} 
                         alt={currentMMService.name} 
-                        className="w-full h-full object-cover opacity-60"
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-102"
                         referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          if (currentPackageFallback && !e.currentTarget.dataset.fallbackTried) {
+                            e.currentTarget.dataset.fallbackTried = 'true';
+                            e.currentTarget.src = currentPackageFallback;
+                          }
+                        }}
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/40 to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/30 to-transparent pointer-events-none" />
                       
-                      <div className="absolute top-3 left-3 bg-rose-950/80 backdrop-blur-xs px-2.5 py-0.5 rounded-full border border-rose-900 text-[9px] font-bold uppercase tracking-widest text-rose-250">
-                        {language === 'en' ? currentMMService.category.replace('_', ' ') : 'प्रसवोत्तर सुरक्षा'}
+                      <div className="absolute top-3 left-3 flex items-center gap-1.5 flex-wrap">
+                        <span className="bg-emerald-900/90 backdrop-blur-md px-2.5 py-1 rounded-full border border-emerald-700/60 text-[10px] font-bold uppercase tracking-wider text-emerald-100 shadow-xs">
+                          {deliveryType === 'normal' 
+                            ? (language === 'en' ? '🌸 Normal Delivery Care' : '🌸 सामान्य प्रसव केयर')
+                            : (language === 'en' ? '👩‍⚕️ C-Section / LSCS Care' : '👩‍⚕️ सिजेरियन प्रसव केयर')
+                          }
+                        </span>
+                        <span className="bg-stone-900/80 backdrop-blur-md px-2 py-1 rounded-full border border-stone-700 text-[10px] font-mono font-bold text-amber-300">
+                          ⏱ {currentMMService.duration} mins
+                        </span>
                       </div>
 
                       <div className="absolute bottom-3 left-3 right-3 text-left">
-                        <span className="text-[9px] font-bold font-mono tracking-widest uppercase text-amber-400 block pb-0.5">
-                          {language === 'en' ? 'Selected Package' : 'चयनित पैकेज'}
+                        <span className="text-[9.5px] font-bold font-mono tracking-widest uppercase text-amber-400 block pb-0.5 drop-shadow-xs">
+                          {language === 'en' ? 'Selected Care Package' : 'चयनित मातृत्व पैकेज'}
                         </span>
-                        <h3 className="font-serif text-sm sm:text-base font-bold text-white line-clamp-1 leading-tight">
+                        <h3 className="font-serif text-sm sm:text-base font-bold text-white line-clamp-1 leading-tight drop-shadow-sm">
                           {language === 'en' ? currentMMService.name : currentMMService.nameHindi}
                         </h3>
                       </div>

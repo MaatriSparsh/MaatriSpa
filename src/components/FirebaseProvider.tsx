@@ -29,7 +29,7 @@ import {
 } from 'firebase/firestore';
 import { auth, db, handleFirestoreError, OperationType } from '../firebase';
 import { Booking, Service, Coupon, ActivityLog, PriceHistoryLog, Review } from '../types';
-import { SERVICES as DEFAULT_SERVICES, DEFAULT_COUPONS } from '../data';
+import { SERVICES as DEFAULT_SERVICES, DEFAULT_COUPONS, CARE_PACKAGE_IMAGES } from '../data';
 
 interface FirebaseContextType {
   user: FirebaseUser | null;
@@ -350,7 +350,7 @@ export default function FirebaseProvider({ children }: { children: ReactNode }) 
           priceInr: (d.id || docSnap.id) === 'normal-sukoon-7' ? 9999 : Number(d.priceInr || d.price || 0),
           discountedPrice: (d.id || docSnap.id) === 'normal-sukoon-7' ? 9999 : Number(d.discountedPrice || d.priceInr || 0),
           duration: Number(d.duration || 60),
-          image: d.image || d.imageUrl || '',
+          image: (CARE_PACKAGE_IMAGES[d.id || docSnap.id]?.image) || d.image || d.imageUrl || '',
           benefits: d.benefits || [],
           benefitsHindi: d.benefitsHindi || d.benefits || [],
           activeStatus: d.activeStatus !== false,
