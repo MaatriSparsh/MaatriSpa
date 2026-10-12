@@ -49,7 +49,7 @@ export default function ServicesView({ onOpenBookingWithService }: ServicesViewP
       taglineHi: 'प्रसवोत्तर सुखदायक विश्राम और बल',
       descriptionEn: 'A luxury 7-day postpartum rehabilitation sequence designed for rapid somatic relief and gentle recovery after natural childbirth.',
       descriptionHi: 'नॉर्मल डिलीवरी के बाद माताओं के त्वरित शारीरिक उद्धार और मानसिक विश्राम के लिए 7 दिनों की सबसे पसंदीदा पारंपरिक थेरेपी।',
-      image: '/src/assets/images/regenerated_image_1791754192229.png',
+      image: '/src/assets/images/sukoon_saptah_7day_new.png',
       includesEn: [
         'Mother Care & Lactation Training',
         'Baby Care',

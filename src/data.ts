@@ -11,7 +11,7 @@ export const SERVICES: Service[] = [
     priceInr: 9999,
     discountedPrice: 9999,
     duration: 300,
-    image: '/src/assets/images/regenerated_image_1791754192229.png',
+    image: '/src/assets/images/sukoon_saptah_7day_new.png',
     benefits: [
       'Mother Care & Lactation Training',
       'Baby Care',
