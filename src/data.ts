@@ -69,7 +69,7 @@ export const SERVICES: Service[] = [
     priceInr: 5999,
     discountedPrice: 5999,
     duration: 180,
-    image: '/src/assets/images/regenerated_image_1791753109553.png',
+    image: '/src/assets/images/shodasha_samskara_new.png',
     benefits: [
       'Mother Care',
       'Baby Care',

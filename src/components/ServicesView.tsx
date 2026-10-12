@@ -138,7 +138,7 @@ export default function ServicesView({ onOpenBookingWithService }: ServicesViewP
       taglineHi: 'सी-सेक्शन टांकों की सुरक्षा और गतिशीलता',
       descriptionEn: 'A highly delicate and supportive 4-day intensive care sequence centered strictly on surgical incision safety, posture alignment, and safe recovery.',
       descriptionHi: 'सिजेरियन डिलीवरी के तुरंत बाद, टांकों को बिना नुकसान पहुंचाए मांसपेशियों को आराम देने और पीठ दर्द कम करने के लिए 4 दिनों का सघन पैकेज।',
-      image: '/src/assets/images/regenerated_image_1791753109553.png',
+      image: '/src/assets/images/shodasha_samskara_new.png',
       includesEn: [
         'Mother Care',
         'Baby Care',
@@ -378,10 +378,13 @@ export default function ServicesView({ onOpenBookingWithService }: ServicesViewP
                                 className="w-full h-full object-contain group-hover:scale-102 transition-transform duration-500"
                                 referrerPolicy="no-referrer"
                                 onError={(e) => {
-                                  // Fallback direct CDN link for the normal care package
+                                  // Fallback direct CDN link
                                   if (pkg.id === 'normal-sukoon-7' && !e.currentTarget.dataset.fallbackTried) {
                                     e.currentTarget.dataset.fallbackTried = 'true';
                                     e.currentTarget.src = 'https://lh3.googleusercontent.com/d/1KbbOXI-N1AJO2Daq-ISCG-Jb2MviYvrw';
+                                  } else if (pkg.id === 'lscs-navya-4' && !e.currentTarget.dataset.fallbackTried) {
+                                    e.currentTarget.dataset.fallbackTried = 'true';
+                                    e.currentTarget.src = 'https://lh3.googleusercontent.com/d/1dwvl_10gArImm5mDAXW3W6K67km9-yh8';
                                   }
                                 }}
                               />

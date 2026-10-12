@@ -1058,6 +1058,9 @@ export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: 
                         if (service.id === 'normal-sukoon-7' && !e.currentTarget.dataset.fallbackTried) {
                           e.currentTarget.dataset.fallbackTried = 'true';
                           e.currentTarget.src = 'https://lh3.googleusercontent.com/d/1KbbOXI-N1AJO2Daq-ISCG-Jb2MviYvrw';
+                        } else if (service.id === 'lscs-navya-4' && !e.currentTarget.dataset.fallbackTried) {
+                          e.currentTarget.dataset.fallbackTried = 'true';
+                          e.currentTarget.src = 'https://lh3.googleusercontent.com/d/1dwvl_10gArImm5mDAXW3W6K67km9-yh8';
                         }
                       }}
                     />
