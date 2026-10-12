@@ -377,6 +377,13 @@ export default function ServicesView({ onOpenBookingWithService }: ServicesViewP
                                 alt={language === 'en' ? pkg.nameEn : pkg.nameHi}
                                 className="w-full h-full object-contain group-hover:scale-102 transition-transform duration-500"
                                 referrerPolicy="no-referrer"
+                                onError={(e) => {
+                                  // Fallback direct CDN link for the normal care package
+                                  if (pkg.id === 'normal-sukoon-7' && !e.currentTarget.dataset.fallbackTried) {
+                                    e.currentTarget.dataset.fallbackTried = 'true';
+                                    e.currentTarget.src = 'https://lh3.googleusercontent.com/d/1KbbOXI-N1AJO2Daq-ISCG-Jb2MviYvrw';
+                                  }
+                                }}
                               />
                             </div>
 
