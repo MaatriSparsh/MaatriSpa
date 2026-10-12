@@ -1,8 +1,23 @@
+import { useState } from 'react';
 import { Leaf, Award, Heart, BadgeCheck, Baby, HeartHandshake, ShieldAlert } from 'lucide-react';
 import { useLanguage } from './LanguageProvider';
 
 export default function AboutView() {
   const { language } = useLanguage();
+  const [posterSrc, setPosterSrc] = useState('https://lh3.googleusercontent.com/d/12twAhzwmKtboUkZt-iJz6hRJJEoCPkgs');
+  const [loadAttempt, setLoadAttempt] = useState(0);
+
+  const handleImageError = () => {
+    if (loadAttempt === 0) {
+      setLoadAttempt(1);
+      setPosterSrc('https://drive.google.com/thumbnail?id=12twAhzwmKtboUkZt-iJz6hRJJEoCPkgs&sz=w1600');
+    } else if (loadAttempt === 1) {
+      setLoadAttempt(2);
+      setPosterSrc('https://drive.google.com/uc?export=view&id=12twAhzwmKtboUkZt-iJz6hRJJEoCPkgs');
+    } else {
+      setPosterSrc('/src/assets/images/breastfeeding_guidance_poster_1791752109689.jpg');
+    }
+  };
 
   return (
     <div className="py-12 bg-stone-50" id="about-view">
@@ -83,10 +98,11 @@ export default function AboutView() {
             <div className="absolute -inset-2.5 rounded-3xl border border-stone-200 bg-stone-100/50" />
             <div className="relative overflow-hidden rounded-2xl shadow-md border border-stone-200 bg-white">
               <img
-                src="/src/assets/images/breastfeeding_guidance_poster_1791752109689.jpg"
+                src={posterSrc}
                 alt="Breastfeeding Success with Expert Guidance - Comprehensive Care & Lactation Support Guide"
                 className="w-full h-auto object-contain block"
                 referrerPolicy="no-referrer"
+                onError={handleImageError}
               />
             </div>
           </div>
