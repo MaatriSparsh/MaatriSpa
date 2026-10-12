@@ -220,7 +220,7 @@ export default function ServicesView({ onOpenBookingWithService }: ServicesViewP
       taglineHi: 'सी-सेक्शन विशिष्ट संपूर्ण आरोग्यता',
       descriptionEn: 'The absolute gold-standard 14-day fully integrated C-section rehabilitation package with customized medical supervision and professional spa support.',
       descriptionHi: '14 दिनों की सी-सेक्शन विशिष्ट संपूर्ण शारीरिक एवं भावनात्मक कल्याण प्रणाली। इसमें क्लिनिकल नर्स विजिट और संपूर्ण स्पा सुख शामिल हैं।',
-      image: '/src/assets/images/regenerated_image_1791753471699.png',
+      image: '/src/assets/images/lscs_puran_14_new.png',
       includesEn: [
         'Mother Care & Lactation Training',
         'Baby Care',
@@ -535,6 +535,9 @@ export default function ServicesView({ onOpenBookingWithService }: ServicesViewP
                                   } else if (pkg.id === 'lscs-sukoon-7' && !e.currentTarget.dataset.fallbackTried) {
                                     e.currentTarget.dataset.fallbackTried = 'true';
                                     e.currentTarget.src = 'https://lh3.googleusercontent.com/d/10Z4zbLv4kQMkdCROR8McfNmMa1Oh6bUQ';
+                                  } else if (pkg.id === 'lscs-puran-14' && !e.currentTarget.dataset.fallbackTried) {
+                                    e.currentTarget.dataset.fallbackTried = 'true';
+                                    e.currentTarget.src = 'https://lh3.googleusercontent.com/d/1nUwYHCB3V-g_jDlEeMCu0Pnh30miTTG6';
                                   }
                                 }}
                               />

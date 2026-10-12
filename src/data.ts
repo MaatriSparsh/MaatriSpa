@@ -123,7 +123,7 @@ export const SERVICES: Service[] = [
     priceInr: 21999,
     discountedPrice: 21999,
     duration: 700,
-    image: '/src/assets/images/regenerated_image_1791753471699.png',
+    image: '/src/assets/images/lscs_puran_14_new.png',
     benefits: [
       'Mother Care & Lactation Training',
       'Baby Care',
