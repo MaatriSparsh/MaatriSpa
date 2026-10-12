@@ -94,7 +94,7 @@ export const SERVICES: Service[] = [
     priceInr: 10999,
     discountedPrice: 10999,
     duration: 350,
-    image: 'https://i.ibb.co/4nhc4R1n/file-00000000972c7208a3662c08ee9a6c01.png',
+    image: '/src/assets/images/lscs_sukoon_7_new.png',
     benefits: [
       'Mother Care & Lactation Training',
       'Baby Care',

@@ -177,7 +177,7 @@ export default function ServicesView({ onOpenBookingWithService }: ServicesViewP
       taglineHi: 'सिजेरियन गतिशीलता और रीढ़ संरेखण',
       descriptionEn: 'A supportive 7-day program to help C-section mothers regain strength. Includes lactic swelling drainage, wound protection training, and posture help.',
       descriptionHi: 'सी-सेक्शन प्रसव के बाद शरीर में जकड़न को समाप्त करने और माताओं को सहज संचलन में मदद करने के लिए 7 दिनों का कल्याण कार्यक्रम।',
-      image: '/src/assets/images/regenerated_image_1791752693993.png',
+      image: '/src/assets/images/lscs_sukoon_7_new.png',
       includesEn: [
         'Mother Care & Lactation Training',
         'Baby Care',
@@ -532,6 +532,9 @@ export default function ServicesView({ onOpenBookingWithService }: ServicesViewP
                                   if (pkg.id === 'lscs-navya-4' && !e.currentTarget.dataset.fallbackTried) {
                                     e.currentTarget.dataset.fallbackTried = 'true';
                                     e.currentTarget.src = 'https://lh3.googleusercontent.com/d/1dwvl_10gArImm5mDAXW3W6K67km9-yh8';
+                                  } else if (pkg.id === 'lscs-sukoon-7' && !e.currentTarget.dataset.fallbackTried) {
+                                    e.currentTarget.dataset.fallbackTried = 'true';
+                                    e.currentTarget.src = 'https://lh3.googleusercontent.com/d/10Z4zbLv4kQMkdCROR8McfNmMa1Oh6bUQ';
                                   }
                                 }}
                               />
