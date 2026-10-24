@@ -6,6 +6,7 @@ import { SERVICES as STATIC_SERVICES, CARE_PACKAGE_IMAGES } from '../data';
 import { useFirebase } from './FirebaseProvider';
 import { useLanguage } from './LanguageProvider';
 import FAQSection from './FAQSection';
+import ChatBot from './ChatBot';
 
 // Helper functions for storing and retrieving the video to/from IndexedDB
 const openVideoDB = (): Promise<IDBDatabase> => {
@@ -1317,6 +1318,12 @@ export default function HomeView({ onNavigateToTab, onOpenBookingWithService }: 
 
       {/* Frequently Asked Questions Section */}
       <FAQSection onOpenBooking={() => onNavigateToTab('contact')} />
+
+      {/* Right Middle Interactive AI Care Chatbot */}
+      <ChatBot
+        onNavigateToTab={onNavigateToTab}
+        onOpenBookingWithService={onOpenBookingWithService}
+      />
 
     </div>
   );
